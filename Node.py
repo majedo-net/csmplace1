@@ -1,3 +1,5 @@
+import numpy as np
+
 class Node:
     """
     Class declaration for node in slicing tree for white space
@@ -7,16 +9,24 @@ class Node:
     """
 
     #top-left x and y coordinates of rectangle
-    tlx = 0
-    tly = 0
+    tlx = 0.0
+    tly = 0.0
+    
+    #original tlx, tly for interpolation needed for spreading of cells after WSA
+    og_tlx = 0.0
+    og_tly = 0.0
 
     #width, height, and area
-    w = 0
-    h = 0
-    area = 0
+    w = 0.0
+    h = 0.0
+    area = 0.0
+
+    #original width, height for interpolation needed for spreading of cells after WSA
+    og_w = 0.0
+    og_h = 0.0
 
     #White space
-    whiteSpace = 0
+    whiteSpace = 0.0
 
     #Child Nodes
     right = None
@@ -25,16 +35,20 @@ class Node:
     #List of cell numbers that lie inside this Node
     cell_nums = None
 
-    def __init__(self, tl_x_=0, tl_y_=0, w_=0, h_=0, area_=0, cells_=None):
+    def __init__(self, tl_x_=0.0, tl_y_=0.0, w_=0.0, h_=0.0, area_=0.0, cells_=None):
         self.tlx = tl_x_
         self.tly = tl_y_
         self.w = w_
         self.h = h_
         self.area = area_
-        self.whiteSpace = 0
+        self.whiteSpace = 0.0
         self.right = None
         self.left = None
         self.cell_nums = cells_
+        self.og_tlx = tl_x_
+        self.og_tly = tl_y_
+        self.og_w = w_
+        self.og_h = h_
 
 
     def printSelf(self):
@@ -140,56 +154,45 @@ class Partition:
 
             #Alternate vertical and horizontal cuts
             if cut_type == 'V':
-                if top.w % 2 == 0:#If width of partition being divided is even
-                    new_w = top.w // 2
-                    left.tlx = top.tlx
-                    left.tly = top.tly
-                    left.w = new_w
-                    left.h = top.h
-                    left.area = left.w*left.h
-                    right.tlx = top.tlx + new_w
-                    right.tly = top.tly
-                    right.w = new_w
-                    right.h = top.h
-                    right.area = right.w*right.h
-                else:#If width of partition being divided is odd
-                    int_new_w = int(top.w / 2)
-                    left.tlx = top.tlx
-                    left.tly = top.tly
-                    left.w = int_new_w
-                    left.h = top.h
-                    left.area = left.w*left.h
-                    right.tlx = top.tlx + int_new_w
-                    right.tly = top.tly
-                    right.w = int_new_w + 1
-                    right.h = top.h
-                    right.area = right.w*right.h
-
-            if cut_type == 'H':
-                if top.h % 2 == 0:#If height of partition being divided is even
-                    new_h = top.h // 2
-                    left.tlx = top.tlx
-                    left.tly = top.tly
-                    left.w = top.w
-                    left.h = new_h
-                    left.area = left.w*left.h
-                    right.tlx = top.tlx 
-                    right.tly = top.tly + new_h
-                    right.w = top.w
-                    right.h = new_h
-                    right.area = right.w*right.h
-                else:#If height of partition being divided is odd
-                    int_new_h = int(top.h / 2)
-                    left.tlx = top.tlx
-                    left.tly = top.tly
-                    left.w = top.w
-                    left.h = int_new_h
-                    left.area = left.w*left.h
-                    right.tlx = top.tlx 
-                    right.tly = top.tly + int_new_h
-                    right.w = top.w
-                    right.h = int_new_h + 1
-                    right.area = right.w*right.h
+                new_w = top.w / 2.0
+                left.tlx = top.tlx
+                left.tly = top.tly
+                left.og_tlx = left.tlx
+                left.og_tly = left.tly
+                left.w = new_w
+                left.h = top.h
+                left.og_w = left.w
+                left.og_h = left.h
+                left.area = left.w*left.h
+                right.tlx = top.tlx + new_w
+                right.tly = top.tly
+                right.og_tlx = right.tlx
+                right.og_tly = right.tly
+                right.w = new_w
+                right.h = top.h
+                right.og_w = right.w
+                right.og_h = right.h
+                right.area = right.w*right.h
+            elif cut_type == 'H':
+                new_h = top.h / 2.0
+                left.tlx = top.tlx
+                left.tly = top.tly
+                left.og_tlx = left.tlx
+                left.og_tly = left.tly
+                left.w = top.w
+                left.h = new_h
+                left.og_w = left.w
+                left.og_h = left.h
+                left.area = left.w*left.h
+                right.tlx = top.tlx 
+                right.tly = top.tly + new_h
+                right.og_tlx = right.tlx
+                right.og_tly = right.tly
+                right.w = top.w
+                right.h = new_h
+                right.og_w = right.w
+                right.og_h = right.h
+                right.area = right.w*right.h
 
             #Determine which cells from the top are inside the left and right partitions
             left_cell_nums = []
@@ -314,6 +317,30 @@ class Partition:
 
         else:
             return
+        
+    def updateCells(self, top):
+        """
+        Function to update cell positions after WSA using linear interpolation
+        with 2 x 2 matrices. This function acts only on the leaves of the slicing tree
+
+        Parameters:
+            top: Top node of slicing tree
+
+        Return:
+            None, update is performed in-place
+        """
+        if top is None:
+            return
+    
+        if (top.left is None) and (top.right is None):#If we are at a leaf node
+            #Calculate scale factors in x- and y-directions (transformation is scaling, no rotation)
+            sf_arr = np.array([top.w/top.og_w, top.h/top.og_h])
+            for cell_n in top.cell_nums:
+                self.cells[cell_n].cx *= sf_arr[0]
+                self.cells[cell_n].cy *= sf_arr[1]
+                             
+        self.updateCells(top.left)
+        self.updateCells(top.right)
 
     def printLeaves(self, top):
         """

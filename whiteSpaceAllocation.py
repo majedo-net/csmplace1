@@ -91,6 +91,9 @@ def main():
     ws = part.calcWhiteSpace(part.topNode)
     part.WSA(part.topNode)
     part.printLeaves(part.topNode)
+    part.updateCells(part.topNode)
+    for cell in part.cells:
+        cell.printSelf()
 
 if __name__ == "__main__":
     main()
