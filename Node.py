@@ -86,18 +86,13 @@ class Cell:
     w = 0.0
     h = 0.0
     area = 0.0
-    cluster = None
-    neighbors = None
-    affinities = None
 
-    def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0,cluster_=[],neighbors_=set()):
+    def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0):
         self.cx = cx_
         self.cy = cy_
         self.w = w_
         self.h = h_
         self.area = area_
-        self.cluster = cluster_
-        self.neighbors = neighbors_
 
     def printSelf(self):
         print("Top-left coordinates: x: " + str(self.cx) + "," + str(self.cy))
@@ -340,9 +335,10 @@ class Partition:
         if (top.left is None) and (top.right is None):#If we are at a leaf node
             #Calculate scale factors in x- and y-directions (transformation is scaling, no rotation)
             sf_arr = np.array([top.w/top.og_w, top.h/top.og_h])
+            trans = np.array([top.tlx - top.og_tlx, top.tly - top.og_tly])
             for cell_n in top.cell_nums:
-                self.cells[cell_n].cx *= sf_arr[0]
-                self.cells[cell_n].cy *= sf_arr[1]
+                self.cells[cell_n].cx = (sf_arr[0]*self.cells[cell_n].cx) + trans[0]
+                self.cells[cell_n].cy = (sf_arr[1]*self.cells[cell_n].cy) + trans[1]
                              
         self.updateCells(top.left)
         self.updateCells(top.right)
