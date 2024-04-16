@@ -86,13 +86,18 @@ class Cell:
     w = 0.0
     h = 0.0
     area = 0.0
+    cluster = None
+    neighbors = None
+    affinities = None
 
-    def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0):
+    def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0,cluster_=[],neighbors_=set()):
         self.cx = cx_
         self.cy = cy_
         self.w = w_
         self.h = h_
         self.area = area_
+        self.cluster = cluster_
+        self.neighbors = neighbors_
 
     def printSelf(self):
         print("Top-left coordinates: x: " + str(self.cx) + "," + str(self.cy))
