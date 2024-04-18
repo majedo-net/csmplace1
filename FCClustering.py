@@ -3,6 +3,7 @@ from Node import Cell
 from Multilevel import LevelGraph
 from verilog2hgr import parse_func
 
+
 def read_hgr(hgr_file):
     '''
     Reads the text file produced by verilog2hgr.py and returns the header and list of edges
@@ -20,19 +21,21 @@ def read_hgr(hgr_file):
 if (__name__ == '__main__'):
     verilog_netlist = 'csmplace1/test.vg'
     hgr_file = 'csmplace1/test.hgr'
-    # convert verilog netlist to hypergraph using verilog2hgr
+    # convert verilog netlist to hypergraph and write to file  using verilog2hgr
     parse_func(verilog_netlist)
-    header,edges = read_hgr(hgr_file)
+    header,master_hg = read_hgr(hgr_file)
     num_nets = int(header[0])
-    num_cells = int(header[1])
-    cell_array = []
-    for cidx in range(num_cells):
-        cell_array.append(Cell(1.0+5*cidx,1, 4, 4, 16))
-    level0 = LevelGraph(cell_array,edges)
-    level0.findNeighbors()
+    master_num_cells = int(header[1])
+    master_cell_array = []
+    for cidx in range(master_num_cells):
+        master_cell_array.append(Cell(1.0+5*cidx,1, 4, 4, 16))
+    level0 = LevelGraph(master_hg,master_cell_array)
+    del master_cell_array
+    level0.nextLevel()
     level0.calcAffinity()
     level0.sortDegree()
     level0.cluster()
+    level0.nextLevel()
 
     print('breakpoint')
 
