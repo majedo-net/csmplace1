@@ -217,6 +217,8 @@ def parse_verilog(infile_name):
 					try:
 						wire_ind = wire_map.get(wire_name)
 					except KeyError:
+						if wire_name in ['VDD', 'VSS']:
+							continue # omit ground and power connections from graph
 						wire_map.add(wire_name)
 						wire_connection_list.append([])
 
