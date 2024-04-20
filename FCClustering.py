@@ -19,8 +19,8 @@ def read_hgr(hgr_file):
     return header, edges
 
 if (__name__ == '__main__'):
-    verilog_netlist = 'csmplace1/test.vg'
-    hgr_file = 'csmplace1/test.hgr'
+    verilog_netlist = 'csmplace1/KSA16_yosys.vg'
+    hgr_file = 'csmplace1/KSA16_yosys.hgr'
     # convert verilog netlist to hypergraph and write to file  using verilog2hgr
     parse_func(verilog_netlist)
     header,master_hg = read_hgr(hgr_file)
@@ -28,14 +28,23 @@ if (__name__ == '__main__'):
     master_num_cells = int(header[1])
     master_cell_array = []
     for cidx in range(master_num_cells):
-        master_cell_array.append(Cell(1.0+5*cidx,1, 4, 4, 16))
+        width = np.random.rand(1)*5
+        height = np.random.rand(1)*5
+        master_cell_array.append(Cell(1.0+5*cidx,1, width,height,width*height))
     level0 = LevelGraph(master_hg,master_cell_array)
     del master_cell_array
-    level0.nextLevel()
-    level0.calcAffinity()
-    level0.sortDegree()
-    level0.cluster()
-    level0.nextLevel()
+    print(f'Level: {level0.current_level}')
+    print(f'Cells: {level0.Nverts}')
+    print(f'Edges: {len(level0.edges[level0.current_level])}')
+    print(f'Avg Cell Area: {level0.average_cluster_area}')
+    print('===================')
+    while level0.Nverts > master_num_cells/2:
+        level0.doFCCluster()
+        print(f'Level: {level0.current_level}')
+        print(f'Cells: {level0.Nverts}')
+        print(f'Edges: {len(level0.edges[level0.current_level])}')
+        print(f'Avg Cell Area: {level0.average_cluster_area}')
+        print('===================')
 
     print('breakpoint')
 
