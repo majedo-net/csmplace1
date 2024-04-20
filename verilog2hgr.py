@@ -124,8 +124,8 @@ def parse_verilog(infile_name):
 	wire_connection_list = []
 	component_map = Map_NameToInd()
 	component_type_dict = {}
-
-	bus_declaration_re = re.compile("[(\d+):(\d+)]")
+	strpattern = r'\[(\d+):(\d+)\]'
+	bus_declaration_re = re.compile(strpattern)
 	wire_tag_list = ["input", "output", "inout", "wire"]
 	ignore_tag_list = ["module", "endmodule", "//"]
 	punctuation_list = [",", ";"]
