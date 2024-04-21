@@ -81,18 +81,27 @@ class Node:
         return False
 
 class Cell:
+    """
+    Class representing a layout cell
+    """
+
+    #Geometric information
     cx = 0.0
     cy = 0.0
     w = 0.0
     h = 0.0
     area = 0.0
 
-    def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0):
+    #List of indices which are this cell's neighbors
+    neighbors = None
+
+    def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0, neighbors_=None):
         self.cx = cx_
         self.cy = cy_
         self.w = w_
         self.h = h_
         self.area = area_
+        self.neighbors = neighbors_
 
     def printSelf(self):
         print("Top-left coordinates: x: " + str(self.cx) + "," + str(self.cy))
@@ -114,7 +123,7 @@ class Partition:
 
         Parameters:
             minA: Minimum allowable area of each partition
-            cells_: List of all cells that are iinside the overall rectangular region
+            cells_: List/array of all cells that are inside the overall rectangular region
         """
         self.cells = cells_
         self.minArea = minA
