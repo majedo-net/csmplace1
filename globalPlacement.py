@@ -91,7 +91,7 @@ def isCellInside(bin_tlx, bin_tly, bin_w, bin_h, cell):
 def calcDb(bin_tlx, bin_tly, bin_w, bin_h, level, cell_array, i_map):
     print()
 
-def calcOverflowRatio(bin_x, bin_y, level, cell_array, i_map, Mb, OVR_AREA):
+def calcOverflowRatio(bin_x, bin_y, level, cell_nums, i_map, cell_arr, Mb, OVR_AREA):
     """
     Function to calculate the total overflow ratio at each level in the
     V-Cycle iteration
@@ -100,8 +100,9 @@ def calcOverflowRatio(bin_x, bin_y, level, cell_array, i_map, Mb, OVR_AREA):
         bin_x: numpy meshgrid of x-coordinates of bin grid
         bin_y: numpy meshgrid of y-coordinates of bin grid
         level: Current level in V-Cycle iteration
-        cell_array: Array of cells at this level
+        cell_nums: Array of cell numbers at this level
         i_map: Index map of cell indices at all different levels
+        cell_arr: Array of all cell objects
         Mb: Max. allowable area in each bin
         OVR_AREA: Overall area of layout region
 
@@ -115,7 +116,7 @@ def calcOverflowRatio(bin_x, bin_y, level, cell_array, i_map, Mb, OVR_AREA):
     bin_h = bin_y[0][1] - bin_y[0][0]
     for j in np.arange(ny-1):
         for i in np.arange(nx-1):
-            Db = calcDb(bin_x[i][j], bin_y[i][j], bin_w, bin_h, level, cell_array, i_map)
+            Db = calcDb(bin_x[i][j], bin_y[i][j], bin_w, bin_h, level, cell_nums, i_map, cell_arr)
             max_overflow += np.max(np.array([Db - Mb,0.0], dtype=np.double))
 
     return (max_overflow / OVR_AREA)
@@ -144,20 +145,23 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         level += 1
         H_current.doFCCluster()
 
-    #Do initial placement at coarsest level
+    #Do initial placement at coarsest level - a few options for this:
+    #1. Use texternal library LEF/DEF floorplanner
+    #2. Topologically sort cells at closest level and arrange in grid
+    #3. Run BFGS with initial random cell coordinates
 
     #Ascent/Refining/Interpolation Stage of V-Cycle Multigrid
     for i in range(level,-1,-1):
         grid_nw = int(np.sqrt(H_current.Nverts))#Make grid of bins square by default
         grid_nh = grid_nw
         bins_x, bins_y = np.meshgrid(np.linspace(0.0, OVR_W, grid_nw, dtype=np.double), np.linspace(0.0, OVR_H, grid_nh, dtype=np.double), indexing='ij')
-        bin_area = (bins_x[1][0] - bins_x[0][0])*(bins_y[0][1] - bins_y[0][0])
+        bin_area = (bins_x[1][0] - bins_x[0][0])*(bins_y[0][1] - bins_y[0][0])#Mb
         #No need for base potentials as we have no pre-placed blocks
         x = np.zeros(1, dtype=np.double)#Center x-coordinates of cells
         y = np.zeros(1, dtype=np.double)#Center y-coordinates of cells
         lambda_m = np.linalg.norm(W(x,y), 1) / np.linalg.norm(Db(x,y), 1)#Initialize lambda to be 1-norm of gradient
         lambda_m1 = lambda_m
-        prev_overflow_ratio = calcOverflowRatio(bins_x, bins_y, i, H_current.verts, H_current.level_index_map)
+        prev_overflow_ratio = calcOverflowRatio(bins_x, bins_y, i, H_current.verts, H_current.level_index_map, H_current.master_cell_array, bin_area, OVR_W*OVR_H)
         new_overflow_ratio = 100.0
         m = 0
 
@@ -168,7 +172,7 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
             m += 1
             lmabda_m1 = 2.0*lambda_m
             #No need for look-ahead LG
-            new_overflow_ratio = calcOverflowRatio(bins_x, bins_y, i, H_current.verts, H_current.level_index_map)
+            new_overflow_ratio = calcOverflowRatio(bins_x, bins_y, i, H_current.verts, H_current.level_index_map, H_current.master_cell_array, bin_area, OVR_W*OVR_H)
             if (new_overflow_ratio - prev_overflow_ratio >= -0.01):#If reduction in overflow ratio is >= 1%, keep going with bfgs
                 continue
             else:#If reduction in overflow ratio is < 1%, stop with bfgs
@@ -184,8 +188,8 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
 
         #De-cluster and update cell positions after WSA()
 
-    H0 = H_current#Return original hypergraph at finest/least clustered level with final GP cell positions
-    return H0
+    H_0 = H_current#Return original hypergraph at finest/least clustered level with final GP cell positions
+    return H_0
 
 
 
