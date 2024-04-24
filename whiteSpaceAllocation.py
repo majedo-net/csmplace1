@@ -1,4 +1,4 @@
-from Node import Node, Cell, Partition
+from Node import Node, Cell, Partition, getEdges
 import numpy as np
 
 """
@@ -82,6 +82,7 @@ def partitionAux(top, minArea, cut_type):
 
 def main():
     #tn = partition(0, 0, 24, 20, 30)
+    """
     cells_arr = [Cell(2.0,2.0,np.sqrt(14.0),np.sqrt(14.0),14.0), Cell(5.0,4.0,np.sqrt(13.0),np.sqrt(13.0),13.0), Cell(8.0,2.0,np.sqrt(20.0),np.sqrt(20.0),20.0), Cell(11.0,4.5,np.sqrt(11.0),np.sqrt(11.0),11.0), 
                  Cell(5.0, 6.0, np.sqrt(24.0), np.sqrt(24.0), 24.0), Cell(8.0, 9.0, 4.0, 4.0, 16.0), Cell(11.0, 7.0, 4.0, 4.0, 16.0), Cell(12.5,0.5,np.sqrt(5.0), np.sqrt(5.0), 5.0), Cell(16.0, 4.0, np.sqrt(20.0), np.sqrt(20.0), 20.0),
                  Cell(16.0, 1.0, np.sqrt(10.0), np.sqrt(10.0), 10.0), Cell(20.0, 3.0, 4.0, 4.0, 16.0), Cell(23.0, 1.0, np.sqrt(13.0), np.sqrt(13.0), 13.0), Cell(13.5, 8.8, np.sqrt(15.0), np.sqrt(15.0), 15.0),
@@ -94,6 +95,14 @@ def main():
     part.updateCells(part.topNode)
     for cell in part.cells:
         cell.printSelf()
+    """
+
+    cells_arr = [Cell(2.0,2.0,np.sqrt(14.0),np.sqrt(14.0),14.0,[1,2,3]), Cell(5.0,4.0,np.sqrt(13.0),np.sqrt(13.0),13.0,[0,3,4]), Cell(8.0,2.0,np.sqrt(20.0),np.sqrt(20.0),20.0,[0,3,5]), 
+                 Cell(11.0,4.5,np.sqrt(11.0),np.sqrt(11.0),11.0,[0,1,2,4,5,6]), Cell(5.0, 6.0, np.sqrt(24.0), np.sqrt(24.0), 24.0,[1,3,6]), Cell(8.0, 9.0, 4.0, 4.0, 16.0,[2,3,6]), 
+                 Cell(11.0, 7.0, 4.0, 4.0, 16.0,[3,4,5])]
+    edges =  getEdges(cells_arr)
+    print(edges)
+                 
 
 if __name__ == "__main__":
     main()

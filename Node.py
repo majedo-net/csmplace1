@@ -79,6 +79,43 @@ class Node:
         if (cell.cx >= self.tlx) and (cell.cx < (self.tlx + self.w)) and (cell.cy >= self.tly) and (cell.cy < (self.tly + self.h)):
             return True
         return False
+    
+def dfsHelper(cell_list, current_cell, edge_list):
+    """
+    Recursive helper function for getEdges(), which uses
+    DFS on the graph to generate the list of edges
+    """
+    cell_list[current_cell].discovered = True
+    for neighbor in cell_list[current_cell].neighbors:
+        if current_cell < neighbor:
+            edge_list.append([current_cell, neighbor])
+        if not cell_list[neighbor].discovered:
+            dfsHelper(cell_list, neighbor, edge_list)
+    
+def getEdges(cell_list):
+    """
+    Function to generate list of edges in graph for Gradient calculation
+
+    Parameters:
+
+        cell_list: List of Cell objects
+
+    Return:
+
+        edge_list: list of edges in graph
+
+    """
+    edge_list = []
+    for i in np.arange(len(cell_list)):
+        cell = cell_list[i]
+        if cell.discovered == False:
+            cell.discovered = True
+            for neighbor in cell.neighbors:
+                if i < neighbor:
+                    edge_list.append([i,neighbor])
+                if not cell_list[neighbor].discovered:
+                    dfsHelper(cell_list, neighbor, edge_list)
+    return edge_list
 
 class Cell:
     """
@@ -94,6 +131,7 @@ class Cell:
 
     #List of indices which are this cell's neighbors
     neighbors = None
+    discovered = False
 
     def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0, neighbors_=None):
         self.cx = cx_
@@ -102,6 +140,7 @@ class Cell:
         self.h = h_
         self.area = area_
         self.neighbors = neighbors_
+        self.discovered = False
 
     def printSelf(self):
         print("Top-left coordinates: x: " + str(self.cx) + "," + str(self.cy))
