@@ -16,6 +16,21 @@ class Vertex:
         self.affinities_=affinities_
         self.cell_idxes = cell_idxes_
 
+    def getVertexPosition(self):
+        '''
+        The position of each vertex is the average of the constituent cell positions
+        '''
+        x = 0.0
+        y = 0.0
+        for cell in self.cell_idxes:
+            x += cell.cx
+            y += cell.cy
+
+        x = x / len(self.cell_idxes)
+        y = y / len(self.cell_idxes)
+        return x , y
+
+
 class LevelGraph:
     '''
     Class to represent hypergraph of clustering levels in coarsening/relaxation process

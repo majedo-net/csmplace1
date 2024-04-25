@@ -133,6 +133,9 @@ class Cell:
     neighbors = None
     discovered = False
 
+    #Cell type from the standard cell library
+    ctype = None
+
     def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0, neighbors_=None):
         self.cx = cx_
         self.cy = cy_
