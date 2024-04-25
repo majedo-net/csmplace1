@@ -144,11 +144,8 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
     while (H_current.Nverts > N_MAX):
         level += 1
         H_current.doFCCluster()
-
-    #Do initial placement at coarsest level - a few options for this:
-    #1. Use texternal library LEF/DEF floorplanner
-    #2. Topologically sort cells at closest level and arrange in grid
-    #3. Run BFGS with initial random cell coordinates
+        
+    # Do initial placement at coarsest level. Topologically sort cells at closest level and arrange in grid
 
     #Ascent/Refining/Interpolation Stage of V-Cycle Multigrid
     for i in range(level,-1,-1):
