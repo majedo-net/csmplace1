@@ -7,19 +7,57 @@ from spef_extractor.lef_def_parser import LefParser, DefParser
 def log_sum_exp(x_k):
     return np.log(np.sum(np.exp(x_k/gamma)))
 
-def W(x):
-    w = np.zeros(len(x))
+def W(LG):
+    '''
+    Compute the smooth wirelength function
+    Parameters:
+        LG: level graph object
+    Returns:
+        W: scalar wirelength
+    '''
+    xvec = LG.xvec() # TODO make sure this comes from the current level
+    yvec = LG.yvec()
+    lidx = LG.current_level # TODO update the current level during coarsening/relaxing
     
-    len_x = np.size(x)
+    w = np.zeros(len(xvec))
     
+    for edge in LG.edges[current_level]:
+            txvec = xvec[edge]
+            tyvec = yvec[edge]
+            t = log_sum_exp(txvec)
+            t2 = log_sum_exp(-txvec)
+            t3 = log_sum_exp(tyvec)
+            t4 = log_sum_exp(-tyvec)
+            w += t + t2 + t3 + t4     
+    return gamma*(w)
+
+def grad_W(LG):
+    '''
+    Compute the gradient of the smooth wirelength wrt vertex positions
+        Parameters:
+            LG: level graph object
+        Returns:
+            gradient vector in 2*Nverts x 1
+    '''
+    xvec = LG.xvec()
+    yvec = LG.yvec()
+    lidx = LG.current_level
+
+    grad_w = np.zeros((len(xvec),2))
+
+    for edge in LG.edges[current_level]:
+        txvec = xvec[edge]
+        tyvec = yvec[edge]
+        pos_x_den = np.sum(np.exp(txvec))
+        neg_x_den = np.sum(np.exp(-txvec))
+        pos_y_den = np.sum(np.exp(tyvec))
+        neg_y_den = np.sum(np.exp(-tyvec))
+        for vidx in edge:
+            grad_w[vidx,0] += (np.exp(xvec[vidx])/pos_x_den) - (np.exp(-xvec)/neg_x_den)
+            grad_w[vidx,1] += (np.exp(yvec[vidx])/pos_y_den) - (np.exp(-yvec)/neg_y_den)
+
+    return np.flatten(grad_w)
     
-    for i in range(len(x)//3):
-            t = log_sum_exp(np.array([x[i], x[i+1]]))
-            t2 = log_sum_exp(np.array([-x[i],-x[i+1]]))
-            t3 = log_sum_exp(np.array([x[i+len_x//2], x[i+1+len_x//2]]))
-            t4 = log_sum_exp(np.array([-x[i+len_x//2], -x[i+1+len_x//2]]))
-            w[i] = t + t2 + t3 + t4     
-    return gamma*(np.sum(w))
 
 def calcCellPotential(vx, vy, bx, by, wv, hv, wb, hb):
     """
