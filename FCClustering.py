@@ -5,19 +5,6 @@ from verilog2hgr import parse_func
 from spef_extractor.lef_def_parser import LefParser, DefParser
 
 
-def read_hgr(hgr_file):
-    '''
-    Reads the text file produced by verilog2hgr.py and returns the header and list of edges
-    Each edge is also a list of cell indexes
-    '''
-    with open(hgr_file) as file:
-        edges = [line.split() for line in file]
-    header=edges.pop(0)
-
-    for idx, edge in enumerate(edges):
-        edges[idx] = [int(vertex)-1 for vertex in edge]
-        
-    return header, edges
 
 if (__name__ == '__main__'):
     verilog_netlist = 'csmplace1/KSA16_yosys.vg'

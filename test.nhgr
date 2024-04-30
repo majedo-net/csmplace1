@@ -1,0 +1,23 @@
+22 21
+_3_ _4_
+\counter_reg_$_DFF_PN0__Q_6 \out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_COUT
+_2_ \counter_reg_$_DFF_PN0__Q_5
+\counter_reg_$_DFF_PN0__Q_4 _2_
+_5_ \counter_reg_$_DFF_PN0__Q_3 _4_
+\counter_reg_$_DFF_PN0__Q_2 _7_
+\counter_reg_$_DFF_PN0__Q_1 _3_
+\counter_reg_$_DFF_PN0__Q _6_
+\counter_reg_$_DFF_PN0__Q_7 _1_
+\counter_reg_$_DFF_PN0__Q_2 \out_$_DFF_PN0__Q \counter_reg_$_DFF_PN0__Q_4 \counter_reg_$_DFF_PN0__Q_6 \counter_reg_$_DFF_PN0__Q \counter_reg_$_DFF_PN0__Q_5 \counter_reg_$_DFF_PN0__Q_7 \counter_reg_$_DFF_PN0__Q_1 \counter_reg_$_DFF_PN0__Q_3
+\out_$_DFF_PN0__Q _4_
+\out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_B _2_ _5_ _4_
+\out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_B_SUM_sky130_fd_sc_hd__ha_1_SUM_1 \out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_COUT
+\counter_reg_$_DFF_PN0__Q_6 \out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_COUT
+\counter_reg_$_DFF_PN0__Q_5 \out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_B_SUM_sky130_fd_sc_hd__ha_1_SUM_1
+\counter_reg_$_DFF_PN0__Q_4 _8_
+\out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_B \counter_reg_$_DFF_PN0__Q_3
+\counter_reg_$_DFF_PN0__Q_2 _7_
+\counter_reg_$_DFF_PN0__Q_1 \out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_B_SUM_sky130_fd_sc_hd__ha_1_SUM
+\counter_reg_$_DFF_PN0__Q _6_
+\out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_B_SUM_sky130_fd_sc_hd__ha_1_SUM_1 _8_
+\out_$_DFF_PN0__Q_D_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_B_SUM_sky130_fd_sc_hd__ha_1_SUM _5_

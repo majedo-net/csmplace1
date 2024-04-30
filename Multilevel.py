@@ -15,6 +15,8 @@ class Vertex:
         self.neighbors=neighbors_
         self.affinities_=affinities_
         self.cell_idxes = cell_idxes_
+        self.x = None
+        self.y = None
 
     def getVertexPosition(self):
         '''
@@ -22,7 +24,8 @@ class Vertex:
         '''
         x = 0.0
         y = 0.0
-        for cell in self.cell_idxes:
+        for cidx in self.cell_idxes: # TODO need a global cell array
+            cell = master_cell_array[cidx]
             x += cell.cx
             y += cell.cy
 
@@ -30,7 +33,24 @@ class Vertex:
         y = y / len(self.cell_idxes)
         return x , y
 
+    def getVertexArea(self):
+        a = 0.0
+        for cidx in self.cell_idxes: # TODO need a global cell array
+            cell = master_cell_array[cidx]
+            a += cell.area
+        return a
 
+    def setVertexPosition(self,x,y):
+        '''
+        The vertex position is applied to the cells it contains
+        '''
+        self.x = x
+        self.y = y
+        for cidx in self.cell_idxes:# TODO need a global cell array
+            cell = master_cell_array[cidx]
+            cell.cx = x
+            cell.cy = y
+        
 class LevelGraph:
     '''
     Class to represent hypergraph of clustering levels in coarsening/relaxation process
@@ -53,6 +73,40 @@ class LevelGraph:
         for idx in range(self.Ncells):
             self.average_cluster_area += self.master_cell_array[idx].area
         self.average_cluster_area = self.average_cluster_area / self.Ncells
+
+    def xvec(self):
+        '''
+        helper function to generate a numpy vector of x values for vertices in the 
+        current level
+        '''
+        vx = []
+        for vert in self.verts:
+            vx.append(vert.x)
+        return np.asarray(vx)
+
+    def yvec(self):
+        '''
+        helper function to generate a vector of y values for vertices in the 
+        current level
+        '''
+        vy = []
+        for vert in self.verts:
+            vy.append(vert.y)
+        return np.asarray(vy)
+
+    def vvec(self):
+        '''
+        helper function to generate a vector of concatenated x and y values 
+        for vertices in the current level
+        '''
+        return np.concatenate((self.xvec(),self.yvec()))
+
+    def avec(self):
+        '''
+        helper function to generate of vector of cell/vertex areas
+        '''
+        for vert in self.verts:
+
 
     def nextLevel(self):
         '''
@@ -98,7 +152,30 @@ class LevelGraph:
         yc = yc / nc
         return xc, yc
 
-
+    def doInitialPlace(self):
+        '''
+        topological sort the current coarsening level and arrange in grid
+        '''
+        grid_nw = int(np.sqrt(self.Nverts))#Make grid of bins square by default
+        grid_nh = grid_nw
+        self.sortDegree()
+        row=0
+        column = 0
+        x = 0.0
+        y = 0.0
+        for cidx in self.degree.keys():
+            self.verts[cidx].setVertexPosition(x,y)
+            t_area = self.getClusterArea(cidx)
+            t_wh = np.sqrt(t_area)
+            if column >= grid_nw:
+                row += 1
+                column = 0
+                y += t_wh
+                x = 0.0
+            else:
+                column += 1
+                x += t_wh
+            
     def sortDegree(self):
         '''
         sort the vertices in the current coarsening level by degree of connectivity. 
