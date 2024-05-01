@@ -5,6 +5,8 @@ from verilog2hgr import parse_func
 from spef_extractor.lef_def_parser import LefParser, DefParser
 
 def log_sum_exp(x_k):
+    gamma = 0.89
+    x_k = x_k.astype(float)
     return np.log(np.sum(np.exp(x_k/gamma)))
 
 def W(LG):
@@ -15,13 +17,13 @@ def W(LG):
     Returns:
         W: scalar wirelength
     '''
-    xvec = LG.xvec() # TODO make sure this comes from the current level
+    xvec = LG.xvec() 
     yvec = LG.yvec()
     lidx = LG.current_level # TODO update the current level during coarsening/relaxing
     
-    w = np.zeros(len(xvec))
+    w = 0.0
     
-    for edge in LG.edges[current_level]:
+    for edge in LG.edges[lidx]:
             txvec = xvec[edge]
             tyvec = yvec[edge]
             t = log_sum_exp(txvec)
@@ -45,7 +47,7 @@ def grad_W(LG):
 
     grad_w = np.zeros((len(xvec),2))
 
-    for edge in LG.edges[current_level]:
+    for edge in LG.edges[lidx]:
         txvec = xvec[edge]
         tyvec = yvec[edge]
         pos_x_den = np.sum(np.exp(txvec))
@@ -53,10 +55,10 @@ def grad_W(LG):
         pos_y_den = np.sum(np.exp(tyvec))
         neg_y_den = np.sum(np.exp(-tyvec))
         for vidx in edge:
-            grad_w[vidx,0] += (np.exp(xvec[vidx])/pos_x_den) - (np.exp(-xvec)/neg_x_den)
-            grad_w[vidx,1] += (np.exp(yvec[vidx])/pos_y_den) - (np.exp(-yvec)/neg_y_den)
+            grad_w[vidx,0] += (np.exp(xvec[vidx])/pos_x_den) - (np.exp(-xvec[vidx])/neg_x_den)
+            grad_w[vidx,1] += (np.exp(yvec[vidx])/pos_y_den) - (np.exp(-yvec[vidx])/neg_y_den)
 
-    return np.flatten(grad_w)
+    return grad_w.flatten()
     
 
 def calcCellPotential(vx, vy, bx, by, wv, hv, wb, hb):
@@ -465,12 +467,15 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
 if (__name__ == '__main__'):
     verilog_netlist = 'csmplace1/KSA16_yosys.vg'
     hgr_file = 'csmplace1/KSA16_yosys.hgr'
+    global master_cell_array
     master_cell_array, master_hg = populateCells(verilog_netlist,hgr_file)
     H_0 = LevelGraph(master_hg,master_cell_array)
 
     #OVR_W and OVR_H taken from openROAD floorplan
     OVR_W = 89.395
     OVR_H = 89.395
+
+    gamma = 0.01 * OVR_W
 
     # require number of vertices at coarsest level to be half the number of cells
     N_MAX = H_0.Nverts/2

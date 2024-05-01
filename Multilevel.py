@@ -46,10 +46,6 @@ class Vertex:
         '''
         self.x = x
         self.y = y
-        for cidx in self.cell_idxes:# TODO need a global cell array
-            cell = master_cell_array[cidx]
-            cell.cx = x
-            cell.cy = y
         
 class LevelGraph:
     '''
@@ -72,6 +68,7 @@ class LevelGraph:
         self.average_cluster_area = 0.0
         for idx in range(self.Ncells):
             self.average_cluster_area += self.master_cell_array[idx].area
+            self.verts.append(Vertex([idx]))
         self.average_cluster_area = self.average_cluster_area / self.Ncells
 
     def xvec(self):
@@ -106,6 +103,7 @@ class LevelGraph:
         helper function to generate of vector of cell/vertex areas
         '''
         for vert in self.verts:
+            pass
 
 
     def nextLevel(self):
@@ -117,13 +115,6 @@ class LevelGraph:
             self.level_index_map=np.vstack((self.level_index_map,np.zeros_like(self.level_index_map[0,:])))
         else:
             self.level_index_map=np.vstack((self.level_index_map,np.zeros_like(self.level_index_map)))
-        for idx in range(self.Nverts):
-            self.verts.append(Vertex([idx]))
-            for edge in self.edges[-1]:
-                if idx in edge:
-                    self.verts[-1].neighbors=self.verts[-1].neighbors.union(edge)
-            # after using the set type to eliminate duplicates, convert neighbors to a list so we can index it later
-            self.verts[-1].neighbors = list(self.verts[-1].neighbors)
 
     def getClusterArea(self,idx):
         '''
@@ -206,7 +197,7 @@ class LevelGraph:
         Cluster the vertices by affinity
         '''
         mergedverts = [] # vertices that have already been merged
-        nextcluster=1 # running index of clusters
+        nextcluster=0 # running index of clusters
         self.edges.append([]) # initialize next level edges
         for cidx in self.degree.keys():
             if cidx in mergedverts: continue
@@ -250,7 +241,7 @@ class LevelGraph:
                     mergedverts.append(cidx)
                     mergedverts.append(mergevertidx)
 
-        self.Nverts = np.max(self.level_index_map[-1,:])
+        self.Nverts = np.max(self.level_index_map[-1,:])+1
         # update average cluster area for this level
         self.average_cluster_area = 0.0
         for idx in range(self.Nverts):
@@ -264,6 +255,19 @@ class LevelGraph:
             if len(newverts) < 2: continue # drop unitary edges
             else:
                 self.edges[-1].append(newverts)
+        # generate vertex objects for new graph
+        self.verts.clear()
+        for idx in range(self.Nverts):
+            cell_list = []
+            for cidx in range(self.Ncells):
+                if self.level_index_map[self.current_level,cidx]==idx:
+                    cell_list.append(cidx)
+            self.verts.append(Vertex(cell_list))
+            for edge in self.edges[-1]:
+                if idx in edge:
+                    self.verts[-1].neighbors=self.verts[-1].neighbors.union(edge)
+            # after using the set type to eliminate duplicates, convert neighbors to a list so we can index it later
+            self.verts[-1].neighbors = list(self.verts[-1].neighbors)
 
     def doFCCluster(self):
         self.nextLevel()
