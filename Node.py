@@ -170,6 +170,19 @@ class Partition:
         self.cells = cells_
         self.minArea = minA
 
+    def vvec(self):
+        '''
+        Funciton to return a 2*N x 1 vector of cell positions
+        '''
+        xs = []
+        ys = []
+        for cell in self.cells:
+            xs.append(cell.x)
+            ys.append(cell.y)
+        xs = np.asarray(xs)
+        ys = np.asarray(ys)
+        return np.concatenate((xs,ys))
+
     def construct(self, ovr_tlx, ovr_tly, ovr_w, ovr_h):
         """
         Function to construct the slicing tree of the partition, including the calculation

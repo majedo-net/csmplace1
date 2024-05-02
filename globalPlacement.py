@@ -604,7 +604,7 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         #do-while optimization loop
         while(True):
             Nx = H_current.Nverts * 2
-            H_guess = 0.01 * np.eye(Nx,Nx)
+            H_guess = 0.001 * np.eye(Nx,Nx)
             H_current = bfgs(H_current, bins_x, bins_y, ovr_pots, H_guess)
             #Update this level's cluster/cell/vertex coordinates using x_new
             m += 1
@@ -625,6 +625,7 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         part.updateCells(part.topNode)
 
         #De-cluster and update cell positions after WSA()
+        H_current.deCluster(part.vvec())
 
     H_0 = H_current#Return original hypergraph at finest/least clustered level with final GP cell positions
     return H_0

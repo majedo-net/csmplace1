@@ -113,6 +113,25 @@ class LevelGraph:
             vh.append(vert.h)
         return np.asarray(vh)
 
+    def deCluster(self,xnew):
+        '''
+        Function to update vertex positions and decluster to the next finest 
+        level
+
+        Parameters:
+            xnew: new positions of 2*Nverts with x values followed by y values
+        '''
+        self.updatePositions(xnew)
+        self.current_level -= 1
+        # generate vertex objects for new graph
+        self.verts.clear()
+        for idx in range(self.Nverts):
+            cell_list = []
+            for cidx in range(self.Ncells):
+                if self.level_index_map[self.current_level,cidx]==idx:
+                    cell_list.append(cidx)
+            self.verts.append(Vertex(cell_list))
+
     def updatePositions(self,xnew):
         '''
         update the positions of the vertices with new iteration of optimized 
