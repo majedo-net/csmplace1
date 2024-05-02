@@ -62,10 +62,10 @@ class Node:
         this partition
         """
 
-        ctlx = cell.cx - (cell.w/2)
-        ctly = cell.cy - (cell.h/2)
-        cbrx = cell.cx + (cell.w/2)
-        cbry = cell.cy + (cell.h/2)
+        ctlx = cell.x - (cell.w/2)
+        ctly = cell.y - (cell.h/2)
+        cbrx = cell.x + (cell.w/2)
+        cbry = cell.y + (cell.h/2)
 
         pbrx = self.tlx + self.w
         pbry = self.tly + self.h
@@ -76,7 +76,7 @@ class Node:
         return False
     
     def isCellInside(self, cell):
-        if (cell.cx >= self.tlx) and (cell.cx < (self.tlx + self.w)) and (cell.cy >= self.tly) and (cell.cy < (self.tly + self.h)):
+        if (cell.x >= self.tlx) and (cell.x < (self.tlx + self.w)) and (cell.y >= self.tly) and (cell.y < (self.tly + self.h)):
             return True
         return False
     
@@ -123,8 +123,8 @@ class Cell:
     """
 
     #Geometric information
-    cx = 0.0
-    cy = 0.0
+    x = 0.0
+    y = 0.0
     w = 0.0
     h = 0.0
     area = 0.0
@@ -136,9 +136,9 @@ class Cell:
     #Cell type from the standard cell library
     ctype = None
 
-    def __init__(self, cx_=0.0, cy_=0, w_=0, h_=0, area_=0.0, neighbors_=None):
-        self.cx = cx_
-        self.cy = cy_
+    def __init__(self, x_=0.0, y_=0, w_=0, h_=0, area_=0.0, neighbors_=None):
+        self.x = x_
+        self.y = y_
         self.w = w_
         self.h = h_
         self.area = area_
@@ -146,7 +146,7 @@ class Cell:
         self.discovered = False
 
     def printSelf(self):
-        print("Top-left coordinates: x: " + str(self.cx) + "," + str(self.cy))
+        print("Top-left coordinates: x: " + str(self.x) + "," + str(self.y))
         print("Width: " + str(self.w) + "   Height: " + str(self.h))
         print("Area: " + str(self.area))
 
@@ -388,8 +388,8 @@ class Partition:
             sf_arr = np.array([top.w/top.og_w, top.h/top.og_h])
             trans = np.array([top.tlx - top.og_tlx, top.tly - top.og_tly])
             for cell_n in top.cell_nums:
-                self.cells[cell_n].cx = (sf_arr[0]*self.cells[cell_n].cx) + trans[0]
-                self.cells[cell_n].cy = (sf_arr[1]*self.cells[cell_n].cy) + trans[1]
+                self.cells[cell_n].x = (sf_arr[0]*self.cells[cell_n].x) + trans[0]
+                self.cells[cell_n].y = (sf_arr[1]*self.cells[cell_n].y) + trans[1]
                              
         self.updateCells(top.left)
         self.updateCells(top.right)

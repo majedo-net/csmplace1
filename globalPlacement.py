@@ -9,16 +9,21 @@ def log_sum_exp(x_k):
     x_k = x_k.astype(float)
     return np.log(np.sum(np.exp(x_k/gamma)))
 
-def W(LG):
+def W(LG,pk=None):
     '''
     Compute the smooth wirelength function
     Parameters:
         LG: level graph object
+        pk: indicates if a descent step should be added x
     Returns:
         W: scalar wirelength
     '''
     xvec = LG.xvec() 
     yvec = LG.yvec()
+    if pk is not None:
+        N = len(xvec)
+        xvec += pk[0:N]
+        yvec += pk[N:]
     lidx = LG.current_level # TODO update the current level during coarsening/relaxing
     
     w = 0.0
@@ -33,7 +38,7 @@ def W(LG):
             w += t + t2 + t3 + t4     
     return gamma*(w)
 
-def grad_W(LG):
+def grad_W(LG,pk=None):
     '''
     Compute the gradient of the smooth wirelength wrt vertex positions
         Parameters:
@@ -44,6 +49,10 @@ def grad_W(LG):
     xvec = LG.xvec()
     yvec = LG.yvec()
     lidx = LG.current_level
+    if pk is not None:
+        N = len(xvec)
+        xvec += pk[0:N]
+        yvec += pk[N:-1]
 
     grad_w = np.zeros((len(xvec),2))
 
@@ -103,21 +112,22 @@ def calcCellPotential(vx, vy, bx, by, wv, hv, wb, hb):
         
     return pot
 
-def calcOvrPotential(x, w, h, bin_x, bin_y):
+def calcOvrPotential(LG, bin_x, bin_y):
     """
     Function to calculate the total potential movable area for each cell
     over all bins
 
     Parameters:
-        x: Vector of x,y coordinates of vertex/cell/cluster centers, x-coordinates first
-        w: Array of vertex/cell widths. w[i] is the width of vertex/cell with center (x[i],x[i+N])
-        h: Array of vertex/cell heights. h[i] is the height of vertex/cell with center (x[i],x[i+N])
+        LG: LevelGraph object containing position and size information about the cells/vertices
         bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
         bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
 
     Return:
         ovr_pots: Array of overall potential movable area for each cell
     """
+    x = LG.vvec()
+    w = LG.wvec()
+    h = LG.hvec()
     N = x.shape[0] // 2
     Nx = bin_x.shape[0]#Grid should be square
     Ny = bin_y.shape[1]#Grid should be square
@@ -179,14 +189,78 @@ def Db(vx, vy, bx, by, wv, hv, wb, hb, ov_pots):
         
     return val
 
-def fDb(x, w, h, bin_x, bin_y, ovr_pots, td=0.6):
+def dDb(vx, vy, bx, by, wv, hv, wb, hb, ov_pots):
     """
-    Function to calculate the sum of the Db's over all the bins
+    Function to calculate the derivative of the contribution of a specific
+    vertex v to the bin density Db of a specific bin b
 
     Parameters:
-        x: Array of x,y coordinates of vertex/cell/cluster centers, x-coordinates first
-        w: Array of vertex/cell widths. w[i] is the width of vertex/cell with center (x[i],x[i+N])
-        h: Array of vertex/cell heights. h[i] is the height of vertex/cell with center (x[i],x[i+N])
+        v_x, v_y: Center x- and y- coordinate, respectively, of
+                  this vertex v
+        b_x, b_y: Center x- and y- coordinates, respectively, of this bin b
+        wv, hv: Widths and height, respectively, of this vertex v
+        wb, hb: Width and height, respectively, of this bin b
+        ov_pots: Total potential of this vertex v
+
+    Return:
+        res_x: Gradient component with respect to x of this vertex
+        res_y: Gradient component with respect to y of this vertex
+    """
+    res_x = 0.0
+    res_y = 0.0
+    #Calculate p_x(b,v)
+    p_x = 0.0
+    p_x_dx = 0.0
+    p_y = 0.0
+    p_y_dy = 0.0
+    abs_dx = np.abs(vx - bx)
+    dx = vx - bx
+    a = 4.0/((wv + 2.0*wb)*(wv + 4.0*wb))
+    b = 2.0/(wb*(wv + 4.0*wb))
+    if abs_dx <= (0.5*wv + wb):
+        p_x = 1.0 - a*(abs_dx**2)
+        p_x_dx = -2.0*a*dx
+        if dx < 0:
+            p_x_dx = 2.0*a*(bx - vx)
+    elif (abs_dx >= (0.5*wv + wb)) and (abs_dx <= (0.5*wv + 2.0*wb)):
+        p_x = b*((abs_dx - 0.5*wv - 2.0*wb)**2)
+        p_x_dx = 2.0*b*(dx - 0.5*wv - 2.0*wb)
+        if dx < 0:
+            p_x_dx = -2.0*b*(bx - vx - 0.5*wv - 2.0*wb)
+    else:
+        p_x = 0.0
+        p_x_dx = 0.0
+    #Calculate p_y(b,v)
+    abs_dy = np.abs(vy - by)
+    dy = vy - by
+    a = 4.0/((hv + 2.0*hb)*(hv + 4.0*hb))
+    b = 2.0/(hb*(hv + 4.0*hb))
+    if abs_dy <= (0.5*hv + hb):
+        p_y = 1.0 - a*(abs_dy**2)
+        p_y_dy = -2.0*a*dy
+        if dy < 0:
+            p_y_dy = 2.0*a*(by - vy)
+    elif (abs_dy >= (0.5*hv + hb)) and (abs_dy <= (0.5*hv + 2.0*hb)):
+        p_y = b*((abs_dy - 0.5*hv - 2.0*hb)**2)
+        p_y_dy = 2.0*b*(dy - 0.5*hv - 2.0*hb)
+        if dy < 0:
+            p_y_dy = -2.0*b*(by - vy - 0.5*hv - 2.0*hb)
+    else:
+        p_y = 0.0
+        p_y_dy = 0.0
+    cv = (wv*hv) / ov_pots
+    #Update res_x, res_y
+    res_x = cv*p_x_dx*p_y
+    res_y = cv*p_x*p_y_dy
+        
+    return res_x, res_y
+
+def maxDb(LG, bin_x, bin_y, ovr_pots, td=0.6):
+    """
+    Function to calculate maximum cell Db for each bin
+
+    Parameters:
+        LG: LevelGrid object, contains all information about cell positions and sizes
         bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
         bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
         ovr_pots: Array of total potential movable area for each cell over all bins
@@ -195,6 +269,50 @@ def fDb(x, w, h, bin_x, bin_y, ovr_pots, td=0.6):
     Return:
         Value of sum of the Db's over all bins
     """
+    x = LG.vvec()
+    w = LG.wvec()
+    h = LG.hvec()
+    N = x.shape[0] // 2
+    Nx = bin_x.shape[0]#Grid should be square
+    Ny = bin_y.shape[1]#Grid should be square
+    wb = bin_x[1][0] - bin_x[0][0]
+    hb = bin_y[0][1] - bin_y[0][0]
+    Mb = td*wb*hb#All area inside the bin can be moved - there are no pre-placed cells
+    bin_dB = np.zeros_like(bin_x)
+    for j in np.arange(Ny - 1):
+        for i in np.arange(Nx - 1):
+            #Potential movable area calculation requires all verticies
+            maxDb = 0.0
+            for k in np.arange(N):
+                cbin_x = bin_x[i][j] + 0.5*wb
+                cbin_y = bin_y[i][j] + 0.5*hb
+                if (np.abs(x[k] - cbin_x) < (0.5*w[k] + 2.0*wb)) or (np.abs(x[k+N] - cbin_y) < (0.5*h[k] + 2.0*hb)):
+                    this_Db = Db(x[k], x[k+N], cbin_x, cbin_y, w[k], h[k], wb, hb, ovr_pots[k])
+
+                    if this_Db > maxDb: maxDb = this_Db
+                        
+            bin_dB[i][j] = maxDb
+    return bin_dB
+def fDb(LG, bin_x, bin_y, ovr_pots, pk=None, td=0.6):
+    """
+    Function to calculate the sum of the Db's over all the bins
+
+    Parameters:
+        LG: LevelGrid object, contains all information about cell positions and sizes
+        bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
+        bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
+        ovr_pots: Array of total potential movable area for each cell over all bins
+        pk: descent step to be added to x during linesearch
+        td: Target density (0.6 by default)
+
+    Return:
+        Value of sum of the Db's over all bins
+    """
+    x = LG.vvec()
+    if pk is not None:
+        x += pk
+    w = LG.wvec()
+    h = LG.hvec()
     N = x.shape[0] // 2
     Nx = bin_x.shape[0]#Grid should be square
     Ny = bin_y.shape[1]#Grid should be square
@@ -216,13 +334,58 @@ def fDb(x, w, h, bin_x, bin_y, ovr_pots, td=0.6):
         
     return fval
 
-def f(x):
-    return x
+def grad_fDb(LG, bin_x, bin_y, ovr_pots, pk=None, td=0.6):
+    """
+    Function to calculate the sum of the grad_Db's over all the bins
 
-def grad_f(x):
-    return x
+    Parameters:
+        LG: LevelGraph object containing information about the cells
+        bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
+        bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
+        ovr_pots: Array of total potential movable area for each cell over all bins
+        pk: descent step to be added to x during linesearch
+        td: Target density (0.6 by default)
 
-def armijo(a_0, pk, xk):
+    Return:
+        Value of sum of the Db's over all bins
+    """
+    x = LG.vvec()
+    if pk is not None:
+        x += pk
+    w = LG.wvec()
+    h = LG.hvec()
+    N = x.shape[0] // 2
+    del_f = np.zeros(x.shape[0], dtype=np.double)
+    Nx = bin_x.shape[0]#Grid should be square
+    Ny = bin_y.shape[1]#Grid should be square
+    wb = bin_x[1][0] - bin_x[0][0]
+    hb = bin_y[0][1] - bin_y[0][0]
+    Mb = td*wb*hb#All area inside the bin can be moved - there are no pre-placed cells
+    for j in np.arange(Ny - 1):
+        for i in np.arange(Nx - 1):
+            #Potential movable area calculation uses all verticies
+            res = np.zeros(2*N, dtype=np.double)
+            sumDb = 0.0
+            for k in np.arange(N):
+                cbin_x = bin_x[i][j] + 0.5*wb
+                cbin_y = bin_y[i][j] + 0.5*hb
+                if (np.abs(x[k] - cbin_x) < (0.5*w[k] + 2.0*wb)) or (np.abs(x[k+N] - cbin_y) < (0.5*h[k] + 2.0*hb)):
+                    res_x, res_y = dDb(x[k], x[k+N], cbin_x, cbin_y, w[k], h[k], wb, hb, ovr_pots[k])
+                    res[k] = res_x
+                    res[k+N] = res_y
+                    sumDb += Db(x[k], x[k+N], cbin_x, cbin_y, w[k], h[k], wb, hb, ovr_pots[k])
+            
+            del_f = del_f + (2.0*(sumDb - Mb)*res)
+            
+    return del_f
+
+def f(LG,bins_x, bins_y, over_pots,pk=None):
+    return W(LG,pk) + fDb(LG,bins_x,bins_y,over_pots,pk)
+
+def grad_f(LG,bins_x,bins_y,over_pots,pk=None):
+    return grad_W(LG,pk) + grad_fDb(LG,bins_x,bins_y,over_pots,pk)
+
+def armijo(a_0, pik, LG,bins_x,bins_y,ovr_pot):
     """
     Auxiliary function to perform Armijo backtracking to obtain a step length alpha_k that leads to
     convergence, i.e. satisfies the Wolfe Conditions
@@ -230,25 +393,31 @@ def armijo(a_0, pk, xk):
     Parameters:
         a_0: Initial guess for step length (1.0)
         pk: Descent direction
-        xk: Value of x at current iteration
-
+        LG: LevelGraph object
+        bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
+        bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
+        ovr_pots: Array of total potential movable area for each cell over all bins
     Return:
         alpha: Step length that satisfies Wolfe Conditions
     """
     alpha = a_0
     rho = 0.5#Needs to be between 0 and 1
     c1 = 0.25
-    while (f(xk + alpha*pk) > f(xk) + alpha*c1*np.dot(grad_f(xk), pk)):
+    while (f(LG,bins_x,bins_y,ovr_pot,pk=alpha*pik) > 
+           f(LG, bins_x,bins_y,ovr_pot) + alpha*c1*np.dot(grad_f(LG,bins_x,bins_y,ovr_pot), pik)):
         alpha = rho*alpha
         
     return alpha
     
-def bfgs(x0, H0, eps=1.0e-3):
+def bfgs(LG,bins_x, bins_y, ovr_pot, H0, eps=1.0e-3):
     """
 
     Function 
     Parameters:
-        x0: Initial guess for trajectory being minimized x
+        LG: LevelGraph object
+        bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
+        bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
+        ovr_pots: Array of total potential movable area for each cell over all bins
         H0: Initial guess for approximate Hessian
 
     Return:
@@ -258,22 +427,22 @@ def bfgs(x0, H0, eps=1.0e-3):
     """
     #Re-use x_prev is x_k in BFGS iteration, x_new is x_k+1, Hk is approximate inverse of del^2 f(x)
     k = 0
-    x_prev = x0
     Hk = H0
     Hk1 = H0
-    x_new = x0
     f_vals = []
-    f_vals.append(f(x_prev))
+    f_vals.append(f(LG,bins_x,bins_y,ovr_pot))
     grad_norms = []
-    grad_norms.append(np.linalg.norm(grad_f(x_prev)))
-    while(np.linalg.norm(grad_f(x_prev)) >= eps):
-        grad_f_p = grad_f(x_prev)
-        print("Iteration " + str(k) + ":        f(x_k): " + str(f(x_prev)) + "        ||grad_f(x_k)||_2: " + str(np.linalg.norm(grad_f_p)))
+    grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot)))
+    while(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot)) >= eps):
+        grad_f_p = grad_f(LG,bins_x,bins_y,ovr_pot)
+        print("Iteration " + str(k) + ":        f(x_k): " + str(f(LG,bins_x,bins_y,ovr_pot)) + "        ||grad_f(x_k)||_2: " + str(np.linalg.norm(grad_f_p)))
         pk = -Hk@grad_f_p#Descent direction
-        ak = armijo(1.0, pk, x_prev)#Armijo backtracking routine to find alpha_k that will lead to convergence
+        ak = armijo(1.0, pk, LG,bins_x,bins_y,ovr_pot)#Armijo backtracking routine to find alpha_k that will lead to convergence
+        x_prev = LG.vvec()
         x_new = x_prev + ak*pk
+        LG.updatePositions(x_new)
         sk = x_new - x_prev
-        grad_f_n = grad_f(x_new)
+        grad_f_n = grad_f(LG,bins_x,bins_y,ovr_pot)
         yk = grad_f_n - grad_f_p
         rho_k = 1.0/np.dot(yk,sk)
         #Expand BFGS update formula 6.17 in Ch.6 of Nocedal and write to calculate H_k+1 using only matrix addition,
@@ -281,12 +450,11 @@ def bfgs(x0, H0, eps=1.0e-3):
         uk = Hk@yk
         vk = (Hk.T)@yk
         Hk1 = Hk - rho_k*np.outer(sk,vk) - rho_k*np.outer(uk,sk) + ((rho_k**2)*np.dot(yk,uk))*np.outer(sk,sk) + rho_k*np.outer(sk,sk)
-        f_vals.append(f(x_new))
-        grad_norms.append(np.linalg.norm(grad_f(x_new)))
-        x_prev = x_new
+        f_vals.append(f(LG,bins_x,bins_y,ovr_pot))
+        grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot)))
         Hk = Hk1
         k += 1
-    return x_new
+    return LG
 
 def isCellInside(bin_tlx, bin_tly, bin_w, bin_h, cell):
     """
@@ -296,15 +464,13 @@ def isCellInside(bin_tlx, bin_tly, bin_w, bin_h, cell):
         return True
     return False
 
-def calcDb(bin_tlx, bin_tly, bin_w, bin_h, level, cell_array, i_map):
-   return 
-
-def calcOverflowRatio(bin_x, bin_y, level, cell_nums, i_map, cell_arr, Mb, OVR_AREA):
+def calcOverflowRatio(LG,bin_x, bin_y,ovr_pot, OVR_AREA):
     """
     Function to calculate the total overflow ratio at each level in the
     V-Cycle iteration
 
     Parameters:
+        LG: LevelGraph object
         bin_x: numpy meshgrid of x-coordinates of bin grid
         bin_y: numpy meshgrid of y-coordinates of bin grid
         level: Current level in V-Cycle iteration
@@ -322,10 +488,9 @@ def calcOverflowRatio(bin_x, bin_y, level, cell_nums, i_map, cell_arr, Mb, OVR_A
     max_overflow = 0.0
     bin_w = bin_x[1][0] - bin_x[0][0]
     bin_h = bin_y[0][1] - bin_y[0][0]
-    for j in np.arange(ny-1):
-        for i in np.arange(nx-1):
-            Db = calcDb(bin_x[i][j], bin_y[i][j], bin_w, bin_h, level, cell_nums, i_map, cell_arr)
-            max_overflow += np.max(np.array([Db - Mb,0.0], dtype=np.double))
+    Mb = bin_w * bin_h
+    Db = maxDb(LG,bin_x, bin_y,ovr_pot)
+    max_overflow = np.max(Db - Mb)
 
     return (max_overflow / OVR_AREA)
 
@@ -429,21 +594,23 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         bins_x, bins_y = np.meshgrid(np.linspace(0.0, OVR_W, grid_nw, dtype=np.double), np.linspace(0.0, OVR_H, grid_nh, dtype=np.double), indexing='ij')
         bin_area = (bins_x[1][0] - bins_x[0][0])*(bins_y[0][1] - bins_y[0][0])#Mb
         #No need for base potentials as we have no pre-placed blocks
-        vvec = H_current.vvec()
-        lambda_m = np.linalg.norm(W(vvec), 1) / np.linalg.norm(Db(vvec), 1)#Initialize lambda to be 1-norm of gradient
+        ovr_pots = calcOvrPotential(H_current, bins_x, bins_y)
+        lambda_m = np.linalg.norm(grad_W(H_current), 1) / np.linalg.norm(grad_fDb(H_current, bins_x, bins_y, ovr_pots), 1)#Initialize lambda to be 1-norm of gradient
         lambda_m1 = lambda_m
-        prev_overflow_ratio = calcOverflowRatio(bins_x, bins_y, i, H_current.verts, H_current.level_index_map, H_current.master_cell_array, bin_area, OVR_W*OVR_H)
+        prev_overflow_ratio = calcOverflowRatio(H_current,bins_x, bins_y,ovr_pots, OVR_W*OVR_H)
         new_overflow_ratio = 100.0
         m = 0
 
         #do-while optimization loop
         while(True):
-            x_new = bfgs(x, y)
+            Nx = H_current.Nverts * 2
+            H_guess = 0.01 * np.eye(Nx,Nx)
+            H_current = bfgs(H_current, bins_x, bins_y, ovr_pots, H_guess)
             #Update this level's cluster/cell/vertex coordinates using x_new
             m += 1
             lmabda_m1 = 2.0*lambda_m
             #No need for look-ahead LG
-            new_overflow_ratio = calcOverflowRatio(bins_x, bins_y, i, H_current.verts, H_current.level_index_map, H_current.master_cell_array, bin_area, OVR_W*OVR_H)
+            new_overflow_ratio = calcOverflowRatio(H_current,bins_x,bins_y,ovr_pots,OVR_W*OVR_H)
             if (new_overflow_ratio - prev_overflow_ratio >= -0.01):#If reduction in overflow ratio is >= 1%, keep going with bfgs
                 continue
             else:#If reduction in overflow ratio is < 1%, stop with bfgs

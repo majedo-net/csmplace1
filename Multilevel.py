@@ -17,28 +17,9 @@ class Vertex:
         self.cell_idxes = cell_idxes_
         self.x = None
         self.y = None
-
-    def getVertexPosition(self):
-        '''
-        The position of each vertex is the average of the constituent cell positions
-        '''
-        x = 0.0
-        y = 0.0
-        for cidx in self.cell_idxes: # TODO need a global cell array
-            cell = master_cell_array[cidx]
-            x += cell.cx
-            y += cell.cy
-
-        x = x / len(self.cell_idxes)
-        y = y / len(self.cell_idxes)
-        return x , y
-
-    def getVertexArea(self):
-        a = 0.0
-        for cidx in self.cell_idxes: # TODO need a global cell array
-            cell = master_cell_array[cidx]
-            a += cell.area
-        return a
+        self.w = None
+        self.h = None
+        self.area = None
 
     def setVertexPosition(self,x,y):
         '''
@@ -46,6 +27,22 @@ class Vertex:
         '''
         self.x = x
         self.y = y
+
+    def updateVertex(self,mca):
+        '''
+        Updates the size of the vertex based on constinuent cells.
+        Assumes that cell_idxes parameter has already been updated.
+        '''
+        w = 0.0
+        h = 0.0
+        a = 0.0
+        for cidx in self.cell_idxes:
+            w += mca[cidx].w
+            h += mca[cidx].h
+            a += mca[cidx].w * mca[cidx].h
+        self.w = w
+        self.h = h
+        self.area = a
         
 class LevelGraph:
     '''
@@ -98,13 +95,34 @@ class LevelGraph:
         '''
         return np.concatenate((self.xvec(),self.yvec()))
 
-    def avec(self):
+    def wvec(self):
         '''
-        helper function to generate of vector of cell/vertex areas
+        helper function to generate vector of cell/vertex widths 
         '''
+        vw = []
         for vert in self.verts:
-            pass
+           vw.append(vert.w)
+        return np.asarray(vw)
 
+    def hvec(self):
+        '''
+        helper function to generate a vector of cell/vertex heights
+        '''
+        vh = []
+        for vert in self.verts:
+            vh.append(vert.h)
+        return np.asarray(vh)
+
+    def updatePositions(self,xnew):
+        '''
+        update the positions of the vertices with new iteration of optimized 
+        positions
+        Parameters:
+            xnew: new positions of 2*Nverts with x values followed by y values
+        '''
+        for vidx in range(self.Nverts):
+            self.verts[vidx].x = xnew[vidx]
+            self.verts[vidx].y = xnew[self.Nverts+vidx]
 
     def nextLevel(self):
         '''
@@ -269,11 +287,17 @@ class LevelGraph:
             # after using the set type to eliminate duplicates, convert neighbors to a list so we can index it later
             self.verts[-1].neighbors = list(self.verts[-1].neighbors)
 
+    def updateVerts(self):
+        for vert in self.verts:
+            vert.updateVertex(self.master_cell_array)
+
+
     def doFCCluster(self):
         self.nextLevel()
         self.calcAffinity()
         self.sortDegree()
         self.cluster()
+        self.updateVerts()
 
 
 
