@@ -537,7 +537,7 @@ def populateCells(verilog_netlist, hgr_filename):
         master_cell_array.append(Cell(1.0+5*cidx,1, width,height,width*height)) 
 
     # parse def file for cell information
-    def_file = 'csmplace1/KSA16_yosys.def'
+    def_file = 'KSA16_yosys.def'
     defparser = DefParser(def_file)
     defparser.parse()
     # build the indexed list of cell types (macros) used in the design
@@ -551,7 +551,7 @@ def populateCells(verilog_netlist, hgr_filename):
         print('Something is wrong with macro list')
 
     for cidx in range(master_num_cells):
-        lef_file = f'csmplace1/cell_lefs/{ctypes[cidx]}.lef'
+        lef_file = f'cell_lefs/{ctypes[cidx]}.lef'
         lefparser = LefParser(lef_file)
         lefparser.parse()
         master_cell_array[cidx].w = lefparser.macro_dict[ctypes[cidx]].info['SIZE'][0]
@@ -604,7 +604,9 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         #do-while optimization loop
         while(True):
             Nx = H_current.Nverts * 2
-            H_guess = 0.001 * np.eye(Nx,Nx)
+            y0 = grad_f(H_current, bins_x, bins_y,ovr_pots)
+            x0 = H_current.vvec()
+            H_guess = (np.dot(y0,x0)/np.dot(y0,y0)) * np.eye(Nx)
             H_current = bfgs(H_current, bins_x, bins_y, ovr_pots, H_guess)
             #Update this level's cluster/cell/vertex coordinates using x_new
             m += 1
@@ -633,8 +635,8 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
 
 # Testing GP
 if (__name__ == '__main__'):
-    verilog_netlist = 'csmplace1/KSA16_yosys.vg'
-    hgr_file = 'csmplace1/KSA16_yosys.hgr'
+    verilog_netlist = 'KSA16_yosys.vg'
+    hgr_file = 'KSA16_yosys.hgr'
     global master_cell_array
     master_cell_array, master_hg = populateCells(verilog_netlist,hgr_file)
     H_0 = LevelGraph(master_hg,master_cell_array)

@@ -1,0 +1,3 @@
+[submodule "SPEF_EXTRACTOR"]
+	path = SPEF_EXTRACTOR
+	url = https://github.com/Cloud-V/SPEF_EXTRACTOR/
