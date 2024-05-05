@@ -392,11 +392,11 @@ def armijo(a_0, pik, LG,bins_x,bins_y,ovr_pot):
 
     Parameters:
         a_0: Initial guess for step length (1.0)
-        pk: Descent direction
+        pik: Descent direction
         LG: LevelGraph object
         bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
         bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
-        ovr_pots: Array of total potential movable area for each cell over all bins
+        ovr_pot: Array of total potential movable area for each cell over all bins
     Return:
         alpha: Step length that satisfies Wolfe Conditions
     """
@@ -408,7 +408,53 @@ def armijo(a_0, pik, LG,bins_x,bins_y,ovr_pot):
         alpha = rho*alpha
         
     return alpha
-    
+
+def lineSearch(a0, pik, LG, bins_x, bins_y, ovr_pot):
+    """
+    Auxiliary function to perform line search using low order polynomial interpolation 
+    to obtain a step length alpha_k that leads to convergence, i.e. satisfies the Wolfe 
+    Conditions
+
+    Parameters:
+        a_0: Initial guess for step length (1.0)
+        pik: Descent direction
+        LG: LevelGraph object
+        bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
+        bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
+        ovr_pot: Array of total potential movable area for each cell over all bins
+    Return:
+        alpha: Step length that satisfies Wolfe Conditions
+    """
+    c1 = 1e-4#Nocedal and Wright specify for this to be small
+    alpha = a0
+    phi_0 = f(LG, bins_x,bins_y,ovr_pot)
+    phi_prime_0 = np.dot(grad_f(LG,bins_x,bins_y,ovr_pot), pik)
+    if (f(LG,bins_x,bins_y,ovr_pot,pk=alpha*pik) <= phi_0 + alpha*c1*phi_prime_0):
+        return alpha
+    else:
+        #Start with quadratic
+        alpha1 = (-phi_prime_0*(alpha**2)) / (2.0*(f(LG,bins_x,bins_y,ovr_pot,pk=alpha*pik) - phi_0 - alpha*phi_prime_0))
+        if (f(LG,bins_x,bins_y,ovr_pot,pk=alpha1*pik) <= phi_0 + alpha1*c1*phi_prime_0):
+            alpha = alpha1
+            return alpha
+        else:
+            #Quadratic interpolation does not give precise enough - go cubic with Hermite Interpolation as
+            #described in Section 3.5
+            alpha0 = alpha
+            while (f(LG,bins_x,bins_y,ovr_pot,pk=alpha1*pik) > phi_0 + alpha1*c1*phi_prime_0):
+                v1 = f(LG,bins_x,bins_y,ovr_pot,pk=alpha1*pik) - phi_0 - alpha1*phi_prime_0
+                v2 = f(LG,bins_x,bins_y,ovr_pot,pk=alpha0*pik) - phi_0 - alpha0*phi_prime_0
+                a = ((alpha0**2)*v1 - (alpha1**2)*v2) / ((alpha0**2)*(alpha1**2)*(alpha1 - alpha0))
+                b = (-1.0*(alpha0**3)*v1 + (alpha1**3)*v2) / ((alpha0**2)*(alpha1**2)*(alpha1 - alpha0))
+                alpha2 = (-1.0*b + np.sqrt(b**2 - (3.0*a*phi_prime_0))) / (3.0*a)
+                alpha0 = alpha1
+                alpha1 = alpha2
+                #If successive alphas are too close together or alpha 1 << alpha0, set alpha1 = alpha0/2
+                if (np.abs(alpha1 - alpha0) < 1.0e-7) or (alpha1 < (1.0e-6)*alpha0):
+                    alpha1 = 0.5*alpha0
+            alpha = alpha1
+        return alpha
+
 def bfgs(LG,bins_x, bins_y, ovr_pot, H0, eps=1.0e-3):
     """
 
