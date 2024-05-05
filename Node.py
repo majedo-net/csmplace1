@@ -146,7 +146,7 @@ class Cell:
         self.discovered = False
 
     def printSelf(self):
-        print("Top-left coordinates: x: " + str(self.x) + "," + str(self.y))
+        print("Center coordinates: x: " + str(self.x) + "," + str(self.y))
         print("Width: " + str(self.w) + "   Height: " + str(self.h))
         print("Area: " + str(self.area))
 
