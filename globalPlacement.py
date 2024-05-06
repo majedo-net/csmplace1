@@ -522,8 +522,8 @@ def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-3):
     f_vals.append(f(LG,bins_x,bins_y,ovr_pot, lambda_m))
     grad_norms = []
     grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m), 1))
-    LG.plotVerts(OVR_W, OVR_H)
-    while(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m), 1) >= eps):
+    LG.plotVerts('plots/start')
+    while True:
         #print(np.linalg.norm(Hk,1))
         grad_f_p = grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m)
         print("Iteration " + str(k) + ":        f(x_k): " + str(f(LG,bins_x,bins_y,ovr_pot, lambda_m)) + "        ||grad_f(x_k)||_1: " + str(np.linalg.norm(grad_f_p, 1)))
@@ -534,7 +534,7 @@ def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-3):
         x_prev = LG.vvec()
         x_new = x_prev + ak*pk
         LG.updatePositions(x_new)
-        LG.plotVerts(OVR_W, OVR_H)
+        LG.plotVerts(f'plots/iter{k}')
         sk = x_new - x_prev
         grad_f_n = grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m)
         yk = grad_f_n - grad_f_p
@@ -543,9 +543,11 @@ def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-3):
         #matrix-vector products and outer products of vectors so total time complexity of update is O(n^2)
         uk = Hk@yk
         vk = (Hk.T)@yk
-        Hk1 = Hk - rho_k*np.outer(sk,vk) - rho_k*np.outer(uk,sk) + ((rho_k**2)*np.dot(yk,uk))*np.outer(sk,sk) + rho_k*np.outer(sk,sk)
+        #Hk1 = Hk - rho_k*np.outer(sk,vk) - rho_k*np.outer(uk,sk) + ((rho_k**2)*np.dot(yk,uk))*np.outer(sk,sk) + rho_k*np.outer(sk,sk)
         f_vals.append(f(LG,bins_x,bins_y,ovr_pot, lambda_m))
         grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m), 1))
+        if (np.abs(f_vals[-1]-f_vals[-2])<eps):
+            break
         Hk = Hk1
         k += 1
     return LG
@@ -673,14 +675,15 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
     """
     H_current = H_0#Current level
     level = 0#Current level, 0 is the finest/least clustered
-
+    H_current.OVR_W = OVR_W
+    H_current.OVR_H = OVR_H
     #Descent/Coarsening/Decimation Stage of V-Cycle Multigrid
     while (H_current.Nverts > N_MAX):
         level += 1
         H_current.doFCCluster()
         
     # Do initial placement at coarsest level. Topologically sort cells at closest level and arrange in grid
-    H_current.doInitialPlace(0.5*OVR_W, 0.5*OVR_H)
+    H_current.doInitialPlace()
     #Ascent/Refining/Interpolation Stage of V-Cycle Multigrid
     for i in range(level,-1,-1):
         print()
@@ -694,7 +697,7 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         bin_area = (bins_x[1][0] - bins_x[0][0])*(bins_y[0][1] - bins_y[0][0])#Mb
         #No need for base potentials as we have no pre-placed blocks
         ovr_pots = calcOvrPotential(H_current, bins_x, bins_y)
-        lambda_m = 0.00001*np.linalg.norm(grad_W(H_current), 1) / np.linalg.norm(grad_fDb(H_current, bins_x, bins_y, ovr_pots), 1)#Initialize lambda to be 1-norm of gradient
+        lambda_m = np.linalg.norm(grad_W(H_current), 1) / np.linalg.norm(grad_fDb(H_current, bins_x, bins_y, ovr_pots), 1)#Initialize lambda to be 1-norm of gradient
         print(lambda_m)
         prev_overflow_ratio = calcOverflowRatio(H_current,bins_x, bins_y,ovr_pots, OVR_W*OVR_H)
         new_overflow_ratio = 0.0
@@ -712,10 +715,7 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
             lambda_m *= 2.0
             #No need for look-ahead LG
             new_overflow_ratio = calcOverflowRatio(H_current,bins_x,bins_y,ovr_pots,OVR_W*OVR_H)
-            if (new_overflow_ratio - prev_overflow_ratio >= -0.01):#If reduction in overflow ratio is >= 1%, keep going with bfgs
-                prev_overflow_ratio = new_overflow_ratio
-                continue
-            else:#If reduction in overflow ratio is < 1%, stop with bfgs
+            if (np.abs(new_overflow_ratio - prev_overflow_ratio) <= 0.01):#If reduction in overflow ratio is >= 1%, keep going with bfgs
                 break
         
         #Post-processing after optimization loop to spread cells

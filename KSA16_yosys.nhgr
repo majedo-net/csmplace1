@@ -1,70 +1,70 @@
 69 81
 S_sky130_fd_sc_hd__fa_1_SUM _050_
 \S_$_XOR__Y_10_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _079_
-_079_ \S_$_XOR__Y_11_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _060_
-_080_ \S_$_XOR__Y_11_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _096_
-_084_ \S_$_XOR__Y_12_B_$_ANDNOT__Y_B_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _059_
-_058_ _083_ \S_$_XOR__Y_13_B_$_ANDNOT__Y_B_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
-_102_ _083_ \S_$_XOR__Y_13_B_$_ANDNOT__Y_B_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
+\S_$_XOR__Y_11_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _079_ _060_
+\S_$_XOR__Y_11_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _096_ _080_
+_084_ _059_ \S_$_XOR__Y_12_B_$_ANDNOT__Y_B_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
+\S_$_XOR__Y_13_B_$_ANDNOT__Y_B_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _083_ _058_
+\S_$_XOR__Y_13_B_$_ANDNOT__Y_B_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _083_ _102_
 \S_$_XOR__Y_13_B_$_ANDNOT__Y_B_$_OR__Y_B_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_COUT _057_
 \S_$_XOR__Y_13_B_$_ANDNOT__Y_B_$_OR__Y_B_$_ANDNOT__Y_A_sky130_fd_sc_hd__ha_1_COUT _057_
-_072_ \S_$_XOR__Y_1_A_$_ANDNOT__B_A_sky130_fd_sc_hd__ha_1_COUT _094_
-_073_ \S_$_XOR__Y_1_A_$_NOT__Y_A_sky130_fd_sc_hd__ha_1_SUM
-_070_ \S_$_XOR__Y_2_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _093_
-\S_$_XOR__Y_3_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _091_ _070_
-\S_$_XOR__Y_3_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _051_
+_072_ _094_ \S_$_XOR__Y_1_A_$_ANDNOT__B_A_sky130_fd_sc_hd__ha_1_COUT
+\S_$_XOR__Y_1_A_$_NOT__Y_A_sky130_fd_sc_hd__ha_1_SUM _073_
+\S_$_XOR__Y_2_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _070_ _093_
+_091_ _070_ \S_$_XOR__Y_3_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
+_051_ \S_$_XOR__Y_3_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
 _091_ \S_$_XOR__Y_4_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _067_
-\S_$_XOR__Y_4_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _075_
+_075_ \S_$_XOR__Y_4_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
 _088_ _067_ \S_$_XOR__Y_5_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
 _052_ \S_$_XOR__Y_5_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
-_088_ \S_$_XOR__Y_6_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _066_
-\S_$_XOR__Y_6_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _076_
-_063_ _066_ \S_$_XOR__Y_7_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
-_053_ \S_$_XOR__Y_7_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
-_086_ _063_ \S_$_XOR__Y_8_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
+_066_ \S_$_XOR__Y_6_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _088_
+_076_ \S_$_XOR__Y_6_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
+_066_ _063_ \S_$_XOR__Y_7_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT
+\S_$_XOR__Y_7_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _053_
+\S_$_XOR__Y_8_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _063_ _086_
 \S_$_XOR__Y_8_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _055_
-_062_ \S_$_XOR__Y_9_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _086_
-_061_ \S_$_XOR__Y_9_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _062_ _078_
-_117_ S_sky130_fd_sc_hd__fa_1_SUM
-_097_ _096_
-_111_ _097_ _098_
+\S_$_XOR__Y_9_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _062_ _086_
+\S_$_XOR__Y_9_B_$_ANDNOT__Y_B_$_OR__Y_A_$_OR__Y_A_sky130_fd_sc_hd__ha_1_COUT _078_ _062_ _061_
+S_sky130_fd_sc_hd__fa_1_SUM _117_
+_096_ _097_
+_098_ _097_ _111_
 _115_ _106_
-_108_ _107_
-_111_ _110_
-_111_ _112_
-_054_ _053_
-_064_ _055_
-_058_ _057_
-_058_ _101_ _059_
-_060_ _059_
-_099_ _060_ _065_
-_061_ _065_ _106_
+_107_ _108_
+_110_ _111_
+_112_ _111_
+_053_ _054_
+_055_ _064_
+_057_ _058_
+_059_ _058_ _101_
+_059_ _060_
+_065_ _099_ _060_
+_065_ _061_ _106_
 _062_ _106_
 _063_ _064_
-_064_ _065_
-_113_ _069_ _065_
+_065_ _064_
+_065_ _113_ _069_
 _066_ _068_ _110_
-_067_ _068_
-_069_ _068_
-_105_ _069_ _071_
+_068_ _067_
+_068_ _069_
+_105_ _071_ _069_
 _070_ _071_
 _072_ _071_ _103_
-_073_ _072_
+_072_ _073_
 _073_ _074_
-_089_ _077_ _076_
+_076_ _077_ _089_
 _077_ _107_
 _078_ _109_
-_079_ _087_
-_080_ _081_
-_083_ _084_
-_100_ _096_ _084_ _085_
+_087_ _079_
+_081_ _080_
+_084_ _083_
+_084_ _096_ _085_ _100_
 _087_ _085_
-_086_ _087_ _110_
-_114_ _090_ _087_
+_110_ _087_ _086_
+_114_ _087_ _090_
 _088_ _089_
-_089_ _107_ _090_
-_090_ _092_
+_107_ _089_ _090_
+_092_ _090_
 _091_ _092_
-_104_ _092_ _093_
+_093_ _092_ _104_
 _094_ _093_
 _095_ _094_

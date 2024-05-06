@@ -57,6 +57,9 @@ class LevelGraph:
     Ncells = 0 # store the number of master cells for convenience
     Nverts = 0 # number of vertices changes each level
     verts = list() # only need the vertex objects for the current level
+    OVR_H=0.0
+    OVR_W=0.0
+
 
     def __init__(self,edges_,cell_array_):
         self.edges = [edges_]
@@ -132,7 +135,9 @@ class LevelGraph:
             xnew: new positions of 2*Nverts with x values followed by y values
         '''
         self.updatePositions(xnew)
+        self.updateCellPositions()
         self.current_level -= 1
+        self.Nverts = np.max(self.level_index_map[self.current_level,:])+1
         # generate vertex objects for new graph
         self.verts.clear()
         for idx in range(self.Nverts):
@@ -141,6 +146,8 @@ class LevelGraph:
                 if self.level_index_map[self.current_level,cidx]==idx:
                     cell_list.append(cidx)
             self.verts.append(Vertex(cell_list))
+            (self.verts[idx].x, self.verts[idx].y) = self.getClusterCenter(idx)
+        self.updateVerts()
 
     def updatePositions(self,xnew):
         '''
@@ -152,6 +159,16 @@ class LevelGraph:
         for vidx in range(self.Nverts):
             self.verts[vidx].x = xnew[vidx]
             self.verts[vidx].y = xnew[self.Nverts+vidx]
+    
+    def updateCellPositions(self):
+        '''
+        Update cell objects in master array with vertex positions
+        '''
+        for idx in range(self.Nverts):
+            for cidx in range(self.Ncells):
+                if self.level_index_map[self.current_level,cidx]==idx:
+                    self.master_cell_array[cidx].x = self.verts[idx].x
+                    self.master_cell_array[cidx].y = self.verts[idx].y
     
     def plotVerts(self,filename=None):
         '''
@@ -203,8 +220,8 @@ class LevelGraph:
         for cell in range(self.Ncells):
             if self.level_index_map[self.current_level,cell] == idx:
                 nc += 1
-                xc += self.master_cell_array[cell].tlx
-                yc += self.master_cell_array[cell].tly
+                xc += self.master_cell_array[cell].x
+                yc += self.master_cell_array[cell].y
         xc = xc / nc
         yc = yc / nc
         return xc, yc
@@ -218,8 +235,10 @@ class LevelGraph:
         self.sortDegree()
         row=0
         column = 0
-        x = 0.0
-        y = 0.0
+        x0= self.OVR_W /2
+        y0= self.OVR_H/2
+        x = x0
+        y = y0
         for cidx in self.degree.keys():
             self.verts[cidx].setVertexPosition(x,y)
             t_area = self.getClusterArea(cidx)
@@ -228,7 +247,7 @@ class LevelGraph:
                 row += 1
                 column = 0
                 y += t_wh
-                x = 0.0
+                x = x0
             else:
                 column += 1
                 x += t_wh
