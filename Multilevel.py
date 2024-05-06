@@ -1,4 +1,7 @@
 import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.collections import PatchCollection
+from matplotlib.patches import Rectangle
 
 def argmax(listvals):
     return max(enumerate(listvals), key=lambda x:x[1])[0]
@@ -113,6 +116,13 @@ class LevelGraph:
             vh.append(vert.h)
         return np.asarray(vh)
 
+    
+    def getMaxArea(self):
+        ma = 0.00
+        for vert in self.verts:
+            if vert.area > ma: ma = vert.area
+        return ma
+    
     def deCluster(self,xnew):
         '''
         Function to update vertex positions and decluster to the next finest 
@@ -142,6 +152,25 @@ class LevelGraph:
         for vidx in range(self.Nverts):
             self.verts[vidx].x = xnew[vidx]
             self.verts[vidx].y = xnew[self.Nverts+vidx]
+    
+    def plotVerts(self,filename=None):
+        '''
+        Plot the current positions and sizes of vertices 
+        Parameters:
+            filename: string to name the plot to save to file
+        '''
+        rect_array = []
+        for vert in self.verts:
+            rect_array.append(Rectangle((vert.x-0.5*vert.w , vert.y - 0.5*vert.h),vert.w,vert.h))
+        pc = PatchCollection(rect_array, facecolor="blue", edgecolor="black")
+        fig, ax = plt.subplots(1)
+        ax.set_xlim([0.0, self.OVR_W])
+        ax.set_ylim([0.0, self.OVR_H])
+        ax.add_collection(pc)
+        #plt.show()
+        # saving png instead of showing because remote machine
+        if filename is not None:
+            plt.savefig(f'{filename}.png',bbox_inches='tight')
 
     def nextLevel(self):
         '''
@@ -149,9 +178,9 @@ class LevelGraph:
         '''
         self.current_level += 1
         if self.current_level>1: 
-            self.level_index_map=np.vstack((self.level_index_map,np.zeros_like(self.level_index_map[0,:])))
+            self.level_index_map=np.vstack((self.level_index_map,-1*np.ones_like(self.level_index_map[0,:])))
         else:
-            self.level_index_map=np.vstack((self.level_index_map,np.zeros_like(self.level_index_map)))
+            self.level_index_map=np.vstack((self.level_index_map,-1*np.ones_like(self.level_index_map)))
 
     def getClusterArea(self,idx):
         '''
