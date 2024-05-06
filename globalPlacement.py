@@ -3,6 +3,7 @@ from Node import Node, Cell, Partition
 from Multilevel import LevelGraph
 from verilog2hgr import parse_func
 from spef_extractor.lef_def_parser import LefParser, DefParser
+import legalization as LG
 
 def log_sum_exp(x_k):
     gamma = 0.89
@@ -143,6 +144,8 @@ def calcOvrPotential(LG, bin_x, bin_y):
                 cbin_y = bin_y[i][j] + 0.5*hb
                 if (np.abs(x[k] - cbin_x) < (0.5*w[k] + 2.0*wb)) or (np.abs(x[k+N] - cbin_y) < (0.5*h[k] + 2.0*hb)):
                     pot += calcCellPotential(x[k], x[k+N], cbin_x, cbin_y, w[k], h[k], wb, hb)
+        if pot == 0:
+            print("Coordinates of 0 potential cell  x: " + str(x[k]) + "   y: " + str(x[k+N]))
         ovr_pots[k] = pot
 
     return ovr_pots
@@ -488,7 +491,7 @@ def lineSearch(a0, pik, LG, bins_x, bins_y, ovr_pot):
             alpha = alpha1
         return alpha
 
-def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-3):
+def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-2):
     """
 
     Function 
@@ -522,19 +525,19 @@ def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-3):
     f_vals.append(f(LG,bins_x,bins_y,ovr_pot, lambda_m))
     grad_norms = []
     grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m), 1))
-    LG.plotVerts('plots/start')
+    #LG.plotVerts()
     while True:
-        #print(np.linalg.norm(Hk,1))
         grad_f_p = grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m)
         print("Iteration " + str(k) + ":        f(x_k): " + str(f(LG,bins_x,bins_y,ovr_pot, lambda_m)) + "        ||grad_f(x_k)||_1: " + str(np.linalg.norm(grad_f_p, 1)))
         pk = -Hk@grad_f_p#Descent direction
+        pk = (1.0 / np.linalg.norm(grad_f_p, 1))*pk
         print(np.linalg.norm(pk,1))
         ak = gsLS(1.0, pk, LG,bins_x,bins_y,ovr_pot, lambda_m)#Armijo backtracking routine to find alpha_k that will lead to convergence
         print("step length ak: " + str(ak))
         x_prev = LG.vvec()
         x_new = x_prev + ak*pk
         LG.updatePositions(x_new)
-        LG.plotVerts(f'plots/iter{k}')
+        #LG.plotVerts()
         sk = x_new - x_prev
         grad_f_n = grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m)
         yk = grad_f_n - grad_f_p
@@ -543,13 +546,17 @@ def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-3):
         #matrix-vector products and outer products of vectors so total time complexity of update is O(n^2)
         uk = Hk@yk
         vk = (Hk.T)@yk
-        #Hk1 = Hk - rho_k*np.outer(sk,vk) - rho_k*np.outer(uk,sk) + ((rho_k**2)*np.dot(yk,uk))*np.outer(sk,sk) + rho_k*np.outer(sk,sk)
+        Hk1 = Hk - rho_k*np.outer(sk,vk) - rho_k*np.outer(uk,sk) + ((rho_k**2)*np.dot(yk,uk))*np.outer(sk,sk) + rho_k*np.outer(sk,sk)
         f_vals.append(f(LG,bins_x,bins_y,ovr_pot, lambda_m))
         grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m), 1))
-        if (np.abs(f_vals[-1]-f_vals[-2])<eps):
+
+        if (np.abs(f_vals[-1] - f_vals[-2]) < eps):
             break
+
+        #Update Hk and k
         Hk = Hk1
         k += 1
+
     return LG
 
 def isCellInside(bin_tlx, bin_tly, bin_w, bin_h, cell):
@@ -657,7 +664,7 @@ def populateCells(verilog_netlist, hgr_filename):
     return master_cell_array, master_hg
 
 
-def gpMain(H_0, N_MAX, OVR_W, OVR_H):
+def gpMain(H_0, N_MAX, OVR_W, OVR_H, eps=1.0e-2):
     """
     Main function for GP phase of placement algorithm. All other
     subroutines used in GP are called from this function
@@ -698,7 +705,6 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         #No need for base potentials as we have no pre-placed blocks
         ovr_pots = calcOvrPotential(H_current, bins_x, bins_y)
         lambda_m = np.linalg.norm(grad_W(H_current), 1) / np.linalg.norm(grad_fDb(H_current, bins_x, bins_y, ovr_pots), 1)#Initialize lambda to be 1-norm of gradient
-        print(lambda_m)
         prev_overflow_ratio = calcOverflowRatio(H_current,bins_x, bins_y,ovr_pots, OVR_W*OVR_H)
         new_overflow_ratio = 0.0
         m = 0
@@ -715,8 +721,10 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
             lambda_m *= 2.0
             #No need for look-ahead LG
             new_overflow_ratio = calcOverflowRatio(H_current,bins_x,bins_y,ovr_pots,OVR_W*OVR_H)
-            if (np.abs(new_overflow_ratio - prev_overflow_ratio) <= 0.01):#If reduction in overflow ratio is >= 1%, keep going with bfgs
+            if (np.abs(new_overflow_ratio - prev_overflow_ratio) < eps):#If reduction in overflow ratio is >= 1%, keep going with bfgs
                 break
+
+            prev_overflow_ratio = new_overflow_ratio
         
         #Post-processing after optimization loop to spread cells
         part = Partition(bin_area, H_current.verts)
@@ -725,9 +733,15 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         part.WSA(part.topNode)
         #part.printLeaves(part.topNode)
         part.updateCells(part.topNode)
+        for vert in H_current.verts:
+            print("x: " + str(vert.x) + "y: " + str(vert.y))
+        print()
+        print()
 
         #De-cluster and update cell positions after WSA()
         H_current.deCluster(part.vvec())
+        for vert in H_current.verts:
+            print("x: " + str(vert.x) + "y: " + str(vert.y))
 
     H_0 = H_current#Return original hypergraph at finest/least clustered level with final GP cell positions
     return H_0
@@ -751,6 +765,8 @@ if (__name__ == '__main__'):
     N_MAX = H_0.Nverts/2
 
     H_0 = gpMain(H_0,N_MAX,OVR_W,OVR_H)
+    H_0, lg_lay = LG.lgMain(H_0, OVR_W, OVR_H)
+    LG.visualizeLG(H_0.master_cell_array, lg_lay, OVR_W, OVR_H)
 
 
 

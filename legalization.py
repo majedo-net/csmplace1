@@ -136,6 +136,7 @@ def visualizeLG(Hfgp_arr, lg_layout, OVR_W, OVR_H):
     ax.add_collection(pc)
     plt.show()
 
+"""
 def main():
     OVR_W = 500.0
     OVR_H = 500.0
@@ -153,3 +154,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+"""

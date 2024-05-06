@@ -147,6 +147,7 @@ class LevelGraph:
                     cell_list.append(cidx)
             self.verts.append(Vertex(cell_list))
             (self.verts[idx].x, self.verts[idx].y) = self.getClusterCenter(idx)
+            #print("declustered x: " + str(self.verts[idx].x) + "  declustered y: " + str(self.verts[idx].y))
         self.updateVerts()
 
     def updatePositions(self,xnew):
@@ -166,10 +167,36 @@ class LevelGraph:
         '''
         for idx in range(self.Nverts):
             for cidx in range(self.Ncells):
-                if self.level_index_map[self.current_level,cidx]==idx:
+                if idx == 0:
+                    print("cell x: " + str(self.master_cell_array[cidx].x) + "  cell y: " + str(self.master_cell_array[cidx].y))
+                if self.level_index_map[self.current_level,cidx] == idx:
                     self.master_cell_array[cidx].x = self.verts[idx].x
                     self.master_cell_array[cidx].y = self.verts[idx].y
-    
+        
+        #For cells that escape clustering, place them like in initial placement
+        row =0
+        column = 0
+        x0 = self.OVR_W /2
+        y0 = self.OVR_H/2
+        x_ = x0
+        y_ = y0
+        grid_nw = int(np.sqrt(self.Nverts))#Make grid of bins square by default
+        for cidx in range(self.Ncells):
+            if (self.master_cell_array[cidx].x >= self.OVR_W) or (self.master_cell_array[cidx].x <= 0.0) or (self.master_cell_array[cidx].y >= self.OVR_H) or (self.master_cell_array[cidx].y <= 0.0): 
+                self.master_cell_array[cidx].x = x_
+                self.master_cell_array[cidx].y = y_
+                t_area = self.master_cell_array[cidx].area
+                t_wh = np.sqrt(t_area)
+                if column >= grid_nw:
+                    row += 1
+                    column = 0
+                    y_ += t_wh
+                    x_ = x0
+                else:
+                    column += 1
+                    x_ += t_wh
+
+
     def plotVerts(self,filename=None):
         '''
         Plot the current positions and sizes of vertices 
@@ -184,7 +211,7 @@ class LevelGraph:
         ax.set_xlim([0.0, self.OVR_W])
         ax.set_ylim([0.0, self.OVR_H])
         ax.add_collection(pc)
-        #plt.show()
+        plt.show()
         # saving png instead of showing because remote machine
         if filename is not None:
             plt.savefig(f'{filename}.png',bbox_inches='tight')
@@ -222,6 +249,13 @@ class LevelGraph:
                 nc += 1
                 xc += self.master_cell_array[cell].x
                 yc += self.master_cell_array[cell].y
+
+        if nc == 0:
+            xc = 0.5*self.OVR_W
+            yc = 0.5*self.OVR_H
+            nc += 1
+
+
         xc = xc / nc
         yc = yc / nc
         return xc, yc
