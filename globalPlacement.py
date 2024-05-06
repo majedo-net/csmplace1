@@ -428,7 +428,7 @@ def gsLS(a0, pik, LG, bins_x, bins_y, ovr_pot, lambda_m):
     newb = b - (rho*(b-a))
     newfb = f(LG,bins_x,bins_y,ovr_pot,lambda_m,pk=newb*pik)
 
-    while (b - a) > 1.0e-4:
+    while (b - a) > 1.0e-6:
         if newfa < newfb: #Next search interval is [a, newb]
             b = newb
             newb = newa
@@ -444,54 +444,7 @@ def gsLS(a0, pik, LG, bins_x, bins_y, ovr_pot, lambda_m):
     
     return (0.5*(b+a))
 
-
-def lineSearch(a0, pik, LG, bins_x, bins_y, ovr_pot):
-    """
-    Auxiliary function to perform line search using low order polynomial interpolation 
-    to obtain a step length alpha_k that leads to convergence, i.e. satisfies the Wolfe 
-    Conditions
-
-    Parameters:
-        a_0: Initial guess for step length (1.0)
-        pik: Descent direction
-        LG: LevelGraph object
-        bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
-        bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
-        ovr_pot: Array of total potential movable area for each cell over all bins
-    Return:
-        alpha: Step length that satisfies Wolfe Conditions
-    """
-    c1 = 1e-4#Nocedal and Wright specify for this to be small
-    alpha = a0
-    phi_0 = f(LG, bins_x,bins_y,ovr_pot)
-    phi_prime_0 = np.dot(grad_f(LG,bins_x,bins_y,ovr_pot), pik)
-    if (f(LG,bins_x,bins_y,ovr_pot,pk=alpha*pik) <= phi_0 + alpha*c1*phi_prime_0):
-        return alpha
-    else:
-        #Start with quadratic
-        alpha1 = (-phi_prime_0*(alpha**2)) / (2.0*(f(LG,bins_x,bins_y,ovr_pot,pk=alpha*pik) - phi_0 - alpha*phi_prime_0))
-        if (f(LG,bins_x,bins_y,ovr_pot,pk=alpha1*pik) <= phi_0 + alpha1*c1*phi_prime_0):
-            alpha = alpha1
-            return alpha
-        else:
-            #Quadratic interpolation does not give precise enough - go cubic with Hermite Interpolation as
-            #described in Section 3.5
-            alpha0 = alpha
-            while (f(LG,bins_x,bins_y,ovr_pot,pk=alpha1*pik) > phi_0 + alpha1*c1*phi_prime_0):
-                v1 = f(LG,bins_x,bins_y,ovr_pot,pk=alpha1*pik) - phi_0 - alpha1*phi_prime_0
-                v2 = f(LG,bins_x,bins_y,ovr_pot,pk=alpha0*pik) - phi_0 - alpha0*phi_prime_0
-                a = ((alpha0**2)*v1 - (alpha1**2)*v2) / ((alpha0**2)*(alpha1**2)*(alpha1 - alpha0))
-                b = (-1.0*(alpha0**3)*v1 + (alpha1**3)*v2) / ((alpha0**2)*(alpha1**2)*(alpha1 - alpha0))
-                alpha2 = (-1.0*b + np.sqrt(b**2 - (3.0*a*phi_prime_0))) / (3.0*a)
-                alpha0 = alpha1
-                alpha1 = alpha2
-                #If successive alphas are too close together or alpha 1 << alpha0, set alpha1 = alpha0/2
-                if (np.abs(alpha1 - alpha0) < 1.0e-6):
-                    alpha1 = 0.5*alpha0
-            alpha = alpha1
-        return alpha
-
-def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-2):
+def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-5):
     """
 
     Function 
@@ -664,7 +617,7 @@ def populateCells(verilog_netlist, hgr_filename):
     return master_cell_array, master_hg
 
 
-def gpMain(H_0, N_MAX, OVR_W, OVR_H, eps=1.0e-2):
+def gpMain(H_0, N_MAX, OVR_W, OVR_H, eps=1.0e-5):
     """
     Main function for GP phase of placement algorithm. All other
     subroutines used in GP are called from this function
@@ -733,15 +686,19 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H, eps=1.0e-2):
         part.WSA(part.topNode)
         #part.printLeaves(part.topNode)
         part.updateCells(part.topNode)
+        """
         for vert in H_current.verts:
             print("x: " + str(vert.x) + "y: " + str(vert.y))
         print()
         print()
+        """
 
         #De-cluster and update cell positions after WSA()
         H_current.deCluster(part.vvec())
+        """
         for vert in H_current.verts:
             print("x: " + str(vert.x) + "y: " + str(vert.y))
+        """
 
     H_0 = H_current#Return original hypergraph at finest/least clustered level with final GP cell positions
     return H_0

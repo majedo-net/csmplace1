@@ -147,7 +147,6 @@ class LevelGraph:
                     cell_list.append(cidx)
             self.verts.append(Vertex(cell_list))
             (self.verts[idx].x, self.verts[idx].y) = self.getClusterCenter(idx)
-            #print("declustered x: " + str(self.verts[idx].x) + "  declustered y: " + str(self.verts[idx].y))
         self.updateVerts()
 
     def updatePositions(self,xnew):
@@ -167,8 +166,6 @@ class LevelGraph:
         '''
         for idx in range(self.Nverts):
             for cidx in range(self.Ncells):
-                if idx == 0:
-                    print("cell x: " + str(self.master_cell_array[cidx].x) + "  cell y: " + str(self.master_cell_array[cidx].y))
                 if self.level_index_map[self.current_level,cidx] == idx:
                     self.master_cell_array[cidx].x = self.verts[idx].x
                     self.master_cell_array[cidx].y = self.verts[idx].y
@@ -250,9 +247,11 @@ class LevelGraph:
                 xc += self.master_cell_array[cell].x
                 yc += self.master_cell_array[cell].y
 
+        #Cell for some reason was not clustered, place randomly inside placement region
+        #well within bounds
         if nc == 0:
-            xc = 0.5*self.OVR_W
-            yc = 0.5*self.OVR_H
+            xc = np.random.uniform(0.25*self.OVR_W, 0.75*self.OVR_W)
+            yc = np.random.uniform(0.25*self.OVR_H, 0.75*self.OVR_H)
             nc += 1
 
 
