@@ -380,13 +380,13 @@ def grad_fDb(LG, bin_x, bin_y, ovr_pots, pk=None, td=0.6):
             
     return del_f
 
-def f(LG,bins_x, bins_y, over_pots,pk=None):
-    return W(LG,pk) + fDb(LG,bins_x,bins_y,over_pots,pk)
+def f(LG,bins_x, bins_y, over_pots,lambda_m,pk=None):
+    return W(LG,pk) + lambda_m*fDb(LG,bins_x,bins_y,over_pots,pk)
 
-def grad_f(LG,bins_x,bins_y,over_pots,pk=None):
-    return grad_W(LG,pk) + grad_fDb(LG,bins_x,bins_y,over_pots,pk)
+def grad_f(LG,bins_x,bins_y,over_pots,lambda_m,pk=None):
+    return grad_W(LG,pk) + lambda_m*grad_fDb(LG,bins_x,bins_y,over_pots,pk)
 
-def armijo(a_0, pik, LG,bins_x,bins_y,ovr_pot):
+def armijo(a_0, pik, LG,bins_x,bins_y,ovr_pot,lambda_m):
     """
     Auxiliary function to perform Armijo backtracking to obtain a step length alpha_k that leads to
     convergence, i.e. satisfies the Wolfe Conditions
@@ -398,45 +398,46 @@ def armijo(a_0, pik, LG,bins_x,bins_y,ovr_pot):
         bin_x: Numpy meshgrid of bin top-left x-coordinates, with indexing='ij'
         bin_y: Numpy meshgrid of bin top-left y-coordinates, with indexing='ij'
         ovr_pot: Array of total potential movable area for each cell over all bins
+        lambda_m: Coefficient in front of crowdedness term Db
     Return:
         alpha: Step length that satisfies Wolfe Conditions
     """
     alpha = a_0
-    rho = 0.8#Needs to be between 0 and 1
-    c1 = 0.01
-    while (f(LG,bins_x,bins_y,ovr_pot,pk=alpha*pik) > 
-           f(LG, bins_x,bins_y,ovr_pot) + alpha*c1*np.dot(grad_f(LG,bins_x,bins_y,ovr_pot), pik)):
+    rho = 0.5#Needs to be between 0 and 1
+    c1 = 0.25
+    while (f(LG,bins_x,bins_y,ovr_pot,lambda_m,pk=alpha*pik) > 
+           f(LG, bins_x,bins_y,ovr_pot,lambda_m) + alpha*c1*np.dot(grad_f(LG,bins_x,bins_y,ovr_pot,lambda_m), pik)):
         alpha = rho*alpha
         
     return alpha
 
-def gsLS(a0, pik, LG, bins_x, bins_y, ovr_pot):
+def gsLS(a0, pik, LG, bins_x, bins_y, ovr_pot, lambda_m):
     """
     Golden section line search
     """
     a = 0.0#Initial values for endpoints of search brackets
-    prevfa = f(LG,bins_x,bins_y,ovr_pot)
+    prevfa = f(LG,bins_x,bins_y,ovr_pot,lambda_m)
     b = a0
-    prevfb = f(LG,bins_x,bins_y,ovr_pot,pk=b*pik)
+    prevfb = f(LG,bins_x,bins_y,ovr_pot,lambda_m,pk=b*pik)
     rho = (3.0 - np.sqrt(5)) / 2.0
     newa = a + (rho*(b-a))
-    newfa = f(LG,bins_x,bins_y,ovr_pot,pk=newa*pik)
+    newfa = f(LG,bins_x,bins_y,ovr_pot,lambda_m,pk=newa*pik)
     newb = b - (rho*(b-a))
-    newfb = f(LG,bins_x,bins_y,ovr_pot,pk=newb*pik)
+    newfb = f(LG,bins_x,bins_y,ovr_pot,lambda_m,pk=newb*pik)
 
-    while (b - a) > 1.0e-6 and (np.abs(newfb - newfa) > 1.0e-5):
+    while (b - a) > 1.0e-4:
         if newfa < newfb: #Next search interval is [a, newb]
             b = newb
             newb = newa
             newfb = newfa
             newa = a + (rho*(b-a))
-            newfa = f(LG,bins_x,bins_y,ovr_pot,pk=newa*pik)
+            newfa = f(LG,bins_x,bins_y,ovr_pot,lambda_m,pk=newa*pik)
         else: #Next search interval is [newa, b]
             a = newa
             newa = newb
             newfa = newfb
             newb = b - (rho*(b-a))
-            newfb = f(LG,bins_x,bins_y,ovr_pot,pk=newb*pik)
+            newfb = f(LG,bins_x,bins_y,ovr_pot,lambda_m,pk=newb*pik)
     
     return (0.5*(b+a))
 
@@ -510,20 +511,32 @@ def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-3):
     Hk = H0
     Hk1 = H0
     f_vals = []
-    f_vals.append(f(LG,bins_x,bins_y,ovr_pot))
+    """
+    print()
+    print()
+    for vert in LG.verts:
+        print(f'{vert.x}, {vert.y}')
+        print()
+        print()
+    """
+    f_vals.append(f(LG,bins_x,bins_y,ovr_pot, lambda_m))
     grad_norms = []
-    grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot)))
-    while(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot)) >= eps):
-        grad_f_p = grad_f(LG,bins_x,bins_y,ovr_pot)
-        print("Iteration " + str(k) + ":        f(x_k): " + str(f(LG,bins_x,bins_y,ovr_pot)) + "        ||grad_f(x_k)||_2: " + str(np.linalg.norm(grad_f_p)))
+    grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m), 1))
+    LG.plotVerts(OVR_W, OVR_H)
+    while(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m), 1) >= eps):
+        #print(np.linalg.norm(Hk,1))
+        grad_f_p = grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m)
+        print("Iteration " + str(k) + ":        f(x_k): " + str(f(LG,bins_x,bins_y,ovr_pot, lambda_m)) + "        ||grad_f(x_k)||_1: " + str(np.linalg.norm(grad_f_p, 1)))
         pk = -Hk@grad_f_p#Descent direction
-        ak = gsLS(1.0, pk, LG,bins_x,bins_y,ovr_pot)#Armijo backtracking routine to find alpha_k that will lead to convergence
+        print(np.linalg.norm(pk,1))
+        ak = gsLS(1.0, pk, LG,bins_x,bins_y,ovr_pot, lambda_m)#Armijo backtracking routine to find alpha_k that will lead to convergence
         print("step length ak: " + str(ak))
         x_prev = LG.vvec()
         x_new = x_prev + ak*pk
         LG.updatePositions(x_new)
+        LG.plotVerts(OVR_W, OVR_H)
         sk = x_new - x_prev
-        grad_f_n = grad_f(LG,bins_x,bins_y,ovr_pot)
+        grad_f_n = grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m)
         yk = grad_f_n - grad_f_p
         rho_k = 1.0/np.dot(yk,sk)
         #Expand BFGS update formula 6.17 in Ch.6 of Nocedal and write to calculate H_k+1 using only matrix addition,
@@ -531,8 +544,8 @@ def bfgs(LG,bins_x, bins_y, ovr_pot, H0, lambda_m, eps=1.0e-3):
         uk = Hk@yk
         vk = (Hk.T)@yk
         Hk1 = Hk - rho_k*np.outer(sk,vk) - rho_k*np.outer(uk,sk) + ((rho_k**2)*np.dot(yk,uk))*np.outer(sk,sk) + rho_k*np.outer(sk,sk)
-        f_vals.append(f(LG,bins_x,bins_y,ovr_pot))
-        grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot)))
+        f_vals.append(f(LG,bins_x,bins_y,ovr_pot, lambda_m))
+        grad_norms.append(np.linalg.norm(grad_f(LG,bins_x,bins_y,ovr_pot, lambda_m), 1))
         Hk = Hk1
         k += 1
     return LG
@@ -667,7 +680,7 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         H_current.doFCCluster()
         
     # Do initial placement at coarsest level. Topologically sort cells at closest level and arrange in grid
-    H_current.doInitialPlace()
+    H_current.doInitialPlace(0.5*OVR_W, 0.5*OVR_H)
     #Ascent/Refining/Interpolation Stage of V-Cycle Multigrid
     for i in range(level,-1,-1):
         print()
@@ -681,16 +694,16 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
         bin_area = (bins_x[1][0] - bins_x[0][0])*(bins_y[0][1] - bins_y[0][0])#Mb
         #No need for base potentials as we have no pre-placed blocks
         ovr_pots = calcOvrPotential(H_current, bins_x, bins_y)
-        lambda_m = np.linalg.norm(grad_W(H_current), 1) / np.linalg.norm(grad_fDb(H_current, bins_x, bins_y, ovr_pots), 1)#Initialize lambda to be 1-norm of gradient
-
+        lambda_m = 0.00001*np.linalg.norm(grad_W(H_current), 1) / np.linalg.norm(grad_fDb(H_current, bins_x, bins_y, ovr_pots), 1)#Initialize lambda to be 1-norm of gradient
+        print(lambda_m)
         prev_overflow_ratio = calcOverflowRatio(H_current,bins_x, bins_y,ovr_pots, OVR_W*OVR_H)
-        new_overflow_ratio = 100.0
+        new_overflow_ratio = 0.0
         m = 0
 
         #do-while optimization loop
         while(True):
             Nx = H_current.Nverts * 2
-            y0 = grad_f(H_current, bins_x, bins_y,ovr_pots)
+            y0 = grad_f(H_current, bins_x, bins_y,ovr_pots, lambda_m)
             x0 = H_current.vvec()
             H_guess = (np.dot(y0,x0)/np.dot(y0,y0)) * np.eye(Nx)
             H_current = bfgs(H_current, bins_x, bins_y, ovr_pots, H_guess, lambda_m)
@@ -700,6 +713,7 @@ def gpMain(H_0, N_MAX, OVR_W, OVR_H):
             #No need for look-ahead LG
             new_overflow_ratio = calcOverflowRatio(H_current,bins_x,bins_y,ovr_pots,OVR_W*OVR_H)
             if (new_overflow_ratio - prev_overflow_ratio >= -0.01):#If reduction in overflow ratio is >= 1%, keep going with bfgs
+                prev_overflow_ratio = new_overflow_ratio
                 continue
             else:#If reduction in overflow ratio is < 1%, stop with bfgs
                 break
